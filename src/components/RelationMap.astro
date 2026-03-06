@@ -9,9 +9,6 @@ const { notions } = Astro.props;
 
 // Generate Mermaid syntax dynamically
 let mermaidGraph = 'graph TD;\n';
-// Styling
-mermaidGraph += `  classDef default fill:#1e293b,stroke:#475569,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;\n`;
-mermaidGraph += `  classDef highlight fill:#0ea5e9,stroke:#38bdf8,stroke-width:2px,color:#fff,rx:8px,ry:8px;\n\n`;
 
 notions.forEach(notion => {
   const acronym = notion.data.acronym;
@@ -28,26 +25,65 @@ notions.forEach(notion => {
 });
 ---
 
-<div class="mermaid w-full overflow-x-auto flex justify-center py-4 bg-transparent min-h-[300px] flex items-center">
-  {mermaidGraph}
+<div class="mermaid-container w-full overflow-x-auto flex justify-center py-4 bg-transparent min-h-[300px] flex items-center" data-mermaid={mermaidGraph}>
 </div>
 
 <script>
   import mermaid from 'mermaid';
-  mermaid.initialize({ 
-    startOnLoad: true, 
-    theme: 'dark',
-    securityLevel: 'loose',
-    fontFamily: 'inherit',
-    themeVariables: {
-      darkMode: true,
-      background: 'transparent',
-      primaryColor: '#1e293b',
-      primaryTextColor: '#f8fafc',
-      primaryBorderColor: '#475569',
-      lineColor: '#64748b',
-      secondaryColor: '#334155',
-      tertiaryColor: '#0f172a'
+  
+  const getMermaidConfig = (theme: string) => {
+    const isDark = theme === 'dark';
+    return {
+      startOnLoad: false,
+      theme: 'base',
+      securityLevel: 'loose',
+      fontFamily: 'inherit',
+      themeVariables: isDark ? {
+        darkMode: true,
+        background: 'transparent',
+        primaryColor: '#1e293b',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#475569',
+        lineColor: '#64748b',
+        secondaryColor: '#334155',
+        tertiaryColor: '#0f172a'
+      } : {
+        darkMode: false,
+        background: 'transparent',
+        primaryColor: '#ffffff',
+        primaryTextColor: '#0f172a',
+        primaryBorderColor: '#cbd5e1',
+        lineColor: '#94a3b8',
+        secondaryColor: '#f1f5f9',
+        tertiaryColor: '#f8fafc'
+      }
+    };
+  };
+
+  const renderGraphs = async () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    const theme = isDark ? 'dark' : 'light';
+    
+    mermaid.initialize(getMermaidConfig(theme) as any);
+    
+    const containers = document.querySelectorAll('.mermaid-container');
+    for (const container of containers) {
+      const code = container.getAttribute('data-mermaid');
+      if (code) {
+        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+        try {
+          const { svg } = await mermaid.render(id, code);
+          container.innerHTML = svg;
+        } catch (e) {
+          console.error('Mermaid rendering failed', e);
+        }
+      }
     }
-  });
+  };
+
+  // Render initially
+  document.addEventListener('DOMContentLoaded', renderGraphs);
+  
+  // Re-render when theme changes
+  document.addEventListener('theme-changed', renderGraphs);
 </script>
