@@ -1,43 +1,34 @@
-# Astro Starter Kit: Minimal
+# Security Notions Zoo
 
-```sh
-npm create astro@latest -- --template minimal
-```
+A static taxonomy site for cryptography security notions, specifically focusing on Fully Homomorphic Encryption (FHE) and Beyond. Check out the interactive map tracking the relations, implications, and definitions of various security games.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Tech Stack
 
-## 🚀 Project Structure
+This project is built using:
+- **[Astro](https://astro.build/)**: For blistering fast static site generation.
+- **[Tailwind CSS](https://tailwindcss.com/)**: For clean, utility-first styling with a dark-mode by default academic aesthetic.
+- **[MDX](https://mdxjs.com/)**: For writing rich content in Markdown with interactive components.
+- **[Mermaid.js](https://mermaid.js.org/)**: For dynamically rendering relation maps and implication graphs client-side.
 
-Inside of your Astro project, you'll see the following folders and files:
+## Local Development
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open your browser to `http://localhost:4321`
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Contributing
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+We welcome contributions! If you'd like to add a new security notion to the taxonomy, or improve an existing one:
 
-Any static assets, like images, can be placed in the `public/` directory.
+1. Fork the repository
+2. Add your notion to `src/content/notions/` following the existing Zod schema (title, acronym, description, tags, introduced_in, implies, implied_by).
+3. Submit a Pull Request!
 
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+If you spot any errors, feel free to open an issue or reach out!

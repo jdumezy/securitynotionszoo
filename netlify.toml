@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  condition = {Role = ["admin"]} # Optional: just an example of Netlify config. The catch-all logic is generally useful for SPAs, but Astro generates static HTML so standard deployment is fine.
+
+# For standard static Astro deployment, building to `dist` is sufficient.
