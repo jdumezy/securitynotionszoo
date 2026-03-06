@@ -22,7 +22,10 @@ const allNotions = await getCollection('notions');
   </section>
 
   <section>
-    <h2 class="text-2xl font-semibold mb-6 text-slate-200">All Notions ({allNotions.length})</h2>
+    <div class="flex justify-between items-end mb-6">
+      <h2 class="text-2xl font-semibold text-slate-200">All Notions ({allNotions.length})</h2>
+      <a href="/notions/all" class="text-accent hover:text-sky-300 text-sm font-medium transition-colors decoration-transparent">View Detailed List &rarr;</a>
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {allNotions.map(notion => (
         <a href={`/notions/${notion.slug}`} class="block group no-underline decoration-transparent">

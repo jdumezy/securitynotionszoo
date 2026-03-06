@@ -1,0 +1,127 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const allNotions = await getCollection('notions');
+allNotions.sort((a, b) => a.data.acronym.localeCompare(b.data.acronym));
+
+const renderedNotions = await Promise.all(
+  allNotions.map(async (notion) => {
+    const { Content } = await notion.render();
+    return { notion, Content };
+  })
+);
+---
+
+<BaseLayout title="All Security Notions | SecurityNotionsZoo" description="A complete list of all cryptographic security notions.">
+  <div class="mb-10">
+    <a href="/" class="text-accent hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-8 decoration-transparent transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Back to taxonomy
+    </a>
+    <h1 class="text-4xl md:text-5xl font-extrabold text-slate-100 mb-4 tracking-tight">
+      All Security Notions
+    </h1>
+    <p class="text-lg text-slate-400 max-w-2xl">
+      Browse the complete dictionary of all cryptographic security games and definitions currently cataloged.
+    </p>
+  </div>
+
+  <div class="space-y-12 mb-16">
+    {renderedNotions.map(({ notion, Content }) => (
+      <article id={notion.slug} class="bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-700/50 shadow-sm expandable-container scroll-mt-24">
+        <header class="mb-6 pb-6 border-b border-slate-700/50">
+          <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div>
+              <div class="flex flex-wrap gap-2 mb-3">
+                {notion.data.tags.map((tag: string) => (
+                  <span class="px-2 py-1 text-xs font-semibold bg-accent/10 text-accent rounded border border-accent/20">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <h2 class="text-3xl font-bold text-slate-100 mb-2">
+                <a href={`/notions/${notion.slug}`} class="hover:text-accent transition-colors decoration-transparent text-slate-100">
+                  {notion.data.acronym}
+                </a>
+              </h2>
+              <p class="text-xl text-slate-400 font-medium">
+                {notion.data.title}
+              </p>
+            </div>
+            
+            <div class="flex flex-col gap-2 min-w-[200px]">
+              {notion.data.implies.length > 0 && (
+                <div class="text-sm">
+                  <span class="text-slate-500 font-medium mr-2">Implies:</span>
+                  <span class="text-slate-300">{notion.data.implies.join(', ')}</span>
+                </div>
+              )}
+              {notion.data.implied_by.length > 0 && (
+                <div class="text-sm">
+                  <span class="text-slate-500 font-medium mr-2">Implied by:</span>
+                  <span class="text-slate-300">{notion.data.implied_by.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <div class="relative">
+          <div class="expandable-content max-h-48 overflow-hidden transition-all duration-300 ease-in-out">
+            <div class="prose prose-invert prose-slate prose-a:text-accent hover:prose-a:text-sky-300 max-w-none">
+              <Content />
+            </div>
+          </div>
+          <div class="gradient-overlay absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none hidden"></div>
+        </div>
+        
+        <button class="expand-btn hidden mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-lg transition-colors border border-slate-600">
+          Read Full Definition
+        </button>
+      </article>
+    ))}
+  </div>
+</BaseLayout>
+
+<script>
+  const initializeExpanders = () => {
+    const containers = document.querySelectorAll('.expandable-container');
+    
+    containers.forEach(container => {
+      const content = container.querySelector('.expandable-content') as HTMLElement;
+      const btn = container.querySelector('.expand-btn') as HTMLButtonElement;
+      const overlay = container.querySelector('.gradient-overlay') as HTMLElement;
+      
+      if (!content || !btn || !overlay) return;
+
+      // Define click handler
+      const toggleContent = () => {
+        if (content.classList.contains('max-h-48')) {
+          content.classList.remove('max-h-48');
+          overlay.classList.add('hidden');
+          btn.textContent = 'Show Less';
+        } else {
+          content.classList.add('max-h-48');
+          overlay.classList.remove('hidden');
+          btn.textContent = 'Read Full Definition';
+        }
+      };
+
+      // Clean up past event listeners by removing and re-adding, just in case
+      btn.removeEventListener('click', toggleContent);
+      btn.addEventListener('click', toggleContent);
+
+      setTimeout(() => {
+        if (content.scrollHeight > content.clientHeight + 10) {
+          btn.classList.remove('hidden');
+          overlay.classList.remove('hidden');
+        } else {
+          content.classList.remove('max-h-48');
+        }
+      }, 100);
+    });
+  };
+
+  document.addEventListener('DOMContentLoaded', initializeExpanders);
+</script>
