@@ -1,0 +1,98 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const notions = await getCollection('notions');
+  return notions.map(notion => ({
+    params: { slug: notion.slug },
+    props: { notion },
+  }));
+}
+
+const { notion } = Astro.props;
+const { Content } = await notion.render();
+---
+
+<BaseLayout 
+  title={`${notion.data.acronym} - ${notion.data.title} | SecurityNotionsZoo`}
+  description={notion.data.description}
+>
+  <div class="mb-10">
+    <a href="/" class="text-accent hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-8 decoration-transparent transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Back to taxonomy
+    </a>
+    
+    <div class="flex flex-wrap gap-2 mb-5">
+      {notion.data.tags.map((tag: string) => (
+        <span class="px-2.5 py-1.5 text-xs font-semibold bg-accent/10 text-accent rounded border border-accent/20">
+          {tag}
+        </span>
+      ))}
+    </div>
+    
+    <h1 class="text-4xl md:text-5xl font-extrabold text-slate-100 mb-3 tracking-tight">
+      {notion.data.acronym}
+    </h1>
+    <p class="text-xl md:text-2xl text-slate-400 font-medium max-w-3xl leading-snug">
+      {notion.data.title}
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+    <div class="lg:col-span-2 prose prose-invert prose-slate prose-a:text-accent hover:prose-a:text-sky-300 max-w-none prose-headings:text-slate-200">
+      <Content />
+    </div>
+    
+    <aside class="space-y-6">
+      {notion.data.introduced_in && notion.data.introduced_in.length > 0 && (
+        <div class="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/50">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Introduced In</h3>
+          <ul class="space-y-5">
+            {notion.data.introduced_in.map((paper: any) => (
+              <li class="text-sm">
+                <a href={paper.link} target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-200 hover:text-accent block mb-1">
+                  {paper.title}
+                </a>
+                <p class="text-slate-400 block leading-relaxed">{paper.authors.join(', ')} ({paper.year})</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(notion.data.implies.length > 0 || notion.data.implied_by.length > 0) && (
+        <div class="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/50">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Relations</h3>
+          
+          {notion.data.implied_by.length > 0 && (
+            <div class="mb-5 last:mb-0">
+              <h4 class="text-xs font-medium text-slate-500 mb-2">Implied By</h4>
+              <div class="flex flex-wrap gap-2">
+                {notion.data.implied_by.map((rel: string) => (
+                  <span class="px-2 py-1 text-xs font-medium bg-slate-700/60 text-slate-300 rounded border border-slate-600">
+                    {rel}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {notion.data.implies.length > 0 && (
+            <div class="last:mb-0">
+              <h4 class="text-xs font-medium text-slate-500 mb-2">Implies</h4>
+              <div class="flex flex-wrap gap-2">
+                {notion.data.implies.map((rel: string) => (
+                  <span class="px-2 py-1 text-xs font-medium bg-slate-700/60 text-slate-300 rounded border border-slate-600">
+                    {rel}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </aside>
+  </div>
+</BaseLayout>

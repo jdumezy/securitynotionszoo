@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import RelationMap from '../components/RelationMap.astro';
+import { getCollection } from 'astro:content';
+
+const allNotions = await getCollection('notions');
+---
+
+<BaseLayout title="SecurityNotionsZoo | Cryptography Notions Taxonomy">
+  <div class="mb-12">
+    <h1 class="text-4xl font-extrabold mb-4 text-slate-100">Security Notions Taxonomy</h1>
+    <p class="text-lg text-slate-400 max-w-2xl">
+      A comprehensive graph and taxonomy of cryptographic security notions, focusing on Fully Homomorphic Encryption (FHE) and Beyond.
+    </p>
+  </div>
+
+  <section class="mb-16">
+    <h2 class="text-2xl font-semibold mb-6 text-slate-200">Relation Map</h2>
+    <div class="bg-slate-800/30 p-2 md:p-6 rounded-2xl border border-slate-700/50 shadow-inner overflow-hidden">
+      <RelationMap notions={allNotions} />
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-2xl font-semibold mb-6 text-slate-200">All Notions ({allNotions.length})</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {allNotions.map(notion => (
+        <a href={`/notions/${notion.slug}`} class="block group no-underline decoration-transparent">
+          <article class="h-full bg-slate-800/20 rounded-xl p-6 border border-slate-700/50 hover:border-slate-500 transition-all hover:bg-slate-800/80 hover:shadow-lg hover:-translate-y-1">
+            <h3 class="text-xl font-bold text-slate-100 group-hover:text-accent mb-2 transition-colors">
+              {notion.data.acronym}
+            </h3>
+            <p class="text-sm font-medium text-slate-400 mb-3 line-clamp-2">{notion.data.title}</p>
+            <p class="text-sm text-slate-300 mb-4 line-clamp-3">
+              {notion.data.description}
+            </p>
+            <div class="flex flex-wrap gap-2 mt-auto">
+              {notion.data.tags.map(tag => (
+                <span class="px-2 py-1 text-xs font-medium bg-slate-700/50 text-slate-300 rounded-md">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </article>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,53 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  notions: CollectionEntry<'notions'>[];
+}
+
+const { notions } = Astro.props;
+
+// Generate Mermaid syntax dynamically
+let mermaidGraph = 'graph TD;\n';
+// Styling
+mermaidGraph += `  classDef default fill:#1e293b,stroke:#475569,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;\n`;
+mermaidGraph += `  classDef highlight fill:#0ea5e9,stroke:#38bdf8,stroke-width:2px,color:#fff,rx:8px,ry:8px;\n\n`;
+
+notions.forEach(notion => {
+  const acronym = notion.data.acronym;
+  // Node definition (click to go to page)
+  mermaidGraph += `  ${acronym}["${acronym}"]\n`;
+  mermaidGraph += `  click ${acronym} "/notions/${notion.slug}" "Go to ${acronym}"\n`;
+  
+  // Implies relationships (A --> B)
+  if (notion.data.implies && notion.data.implies.length > 0) {
+    notion.data.implies.forEach(target => {
+      mermaidGraph += `  ${acronym} --> ${target}\n`;
+    });
+  }
+});
+---
+
+<div class="mermaid w-full overflow-x-auto flex justify-center py-4 bg-transparent min-h-[300px] flex items-center">
+  {mermaidGraph}
+</div>
+
+<script>
+  import mermaid from 'mermaid';
+  mermaid.initialize({ 
+    startOnLoad: true, 
+    theme: 'dark',
+    securityLevel: 'loose',
+    fontFamily: 'inherit',
+    themeVariables: {
+      darkMode: true,
+      background: 'transparent',
+      primaryColor: '#1e293b',
+      primaryTextColor: '#f8fafc',
+      primaryBorderColor: '#475569',
+      lineColor: '#64748b',
+      secondaryColor: '#334155',
+      tertiaryColor: '#0f172a'
+    }
+  });
+</script>

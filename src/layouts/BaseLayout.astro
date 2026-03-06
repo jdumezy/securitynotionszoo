@@ -1,0 +1,41 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'A static taxonomy site for cryptography security notions, focused on FHE.' } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body class="bg-slate-900 text-slate-200 antialiased selection:bg-accent selection:text-white min-h-screen flex flex-col">
+    <div class="max-w-5xl mx-auto px-4 py-8 w-full flex-grow flex flex-col">
+      <header class="mb-12 border-b border-slate-800 pb-6">
+        <nav class="flex justify-between items-center">
+          <a href="/" class="text-2xl font-bold text-slate-100 no-underline hover:text-accent decoration-transparent">
+            SecurityNotionsZoo
+          </a>
+          <a href="https://github.com/jdumezy/securitynotionszoo" target="_blank" class="text-slate-400 hover:text-slate-200 decoration-transparent font-medium">GitHub</a>
+        </nav>
+      </header>
+      
+      <main class="flex-grow">
+        <slot />
+      </main>
+      
+      <footer class="mt-16 border-t border-slate-800 pt-8 pb-4 text-center text-slate-500 text-sm">
+        <p>&copy; {new Date().getFullYear()} SecurityNotionsZoo. Built with Astro, Tailwind CSS, and Mermaid.js.</p>
+      </footer>
+    </div>
+  </body>
+</html>

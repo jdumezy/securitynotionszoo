@@ -1,0 +1,19 @@
+---
+title: "Indistinguishability under Chosen Plaintext Attack for Deterministic Encryption"
+acronym: "IND-CPA-D"
+description: "A security notion for deterministic encryption schemes where encrypting the same message multiple times yields the same ciphertext."
+tags: ["FHE", "Deterministic", "CPA"]
+introduced_in:
+  - title: "Deterministic Public Key Encryption"
+    authors: ["Mihir Bellare", "Alexandra Boldyreva", "Adam O'Neill"]
+    year: 2007
+    link: "https://eprint.iacr.org/2006/317"
+implies: ["OW-CPA"]
+implied_by: ["IND-CCA-D"]
+---
+
+Deterministic encryption does not use randomness during the encryption process. 
+As a result, an adversary can easily notice if the same message is encrypted multiple times.
+
+The IND-CPA-D security game assumes the adversary does not query the encryption oracle on a message they intend to challenge.
+For deterministic encryption, IND-CPA is impossible to achieve typically because the adversary could just re-encrypt the challenge plaintexts using the public key and compare them to the challenge ciphertext.
