@@ -1,23 +1,26 @@
 ---
 import '../styles/global.css';
 import ThemeToggle from '../components/ThemeToggle.astro';
+import SEO from '../components/SEO.astro';
 
 interface Props {
   title: string;
   description?: string;
+  image?: string;
+  type?: string;
 }
 
-const { title, description = 'A static taxonomy site for cryptography security notions, focused on FHE.' } = Astro.props;
+const { 
+  title, 
+  description = 'A static taxonomy site for cryptography security notions, focused on FHE.',
+  image,
+  type
+} = Astro.props;
 ---
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <SEO title={title} description={description} image={image} type={type} />
     <script is:inline>
       const theme = (() => {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
