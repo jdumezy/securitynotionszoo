@@ -6,17 +6,17 @@ const notionsCollection = defineCollection({
     title: z.string(),
     acronym: z.string(),
     description: z.string().max(160),
-    tags: z.array(z.string()),
+    tags: z.array(z.string()).default([]),
     introduced_in: z.array(
       z.object({
-        title: z.string(),
-        authors: z.array(z.string()),
-        year: z.number(),
-        link: z.string().url(),
+        title: z.string().optional(),
+        authors: z.array(z.string()).optional().default([]),
+        year: z.number().nullable().optional(),
+        link: z.union([z.string().url(), z.literal('')]).optional(),
       })
-    ),
-    implies: z.array(z.string()),
-    implied_by: z.array(z.string()),
+    ).optional().default([]),
+    implies: z.array(z.string()).optional().default([]),
+    implied_by: z.array(z.string()).optional().default([]),
   }),
 });
 

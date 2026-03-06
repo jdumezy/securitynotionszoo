@@ -47,16 +47,26 @@ const { Content } = await notion.render();
     </div>
     
     <aside class="space-y-6">
-      {notion.data.introduced_in && notion.data.introduced_in.length > 0 && (
+      {notion.data.introduced_in && notion.data.introduced_in.filter((p: any) => p.title).length > 0 && (
         <div class="bg-white dark:bg-slate-800/30 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/50 transition-colors">
           <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4 transition-colors">Introduced In</h3>
           <ul class="space-y-5">
-            {notion.data.introduced_in.map((paper: any) => (
+            {notion.data.introduced_in.filter((p: any) => p.title).map((paper: any) => (
               <li class="text-sm">
-                <a href={paper.link} target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-accent block mb-1 transition-colors">
-                  {paper.title}
-                </a>
-                <p class="text-slate-600 dark:text-slate-400 block leading-relaxed transition-colors">{paper.authors.join(', ')} ({paper.year})</p>
+                {paper.link ? (
+                  <a href={paper.link} target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-accent block mb-1 transition-colors">
+                    {paper.title}
+                  </a>
+                ) : (
+                  <span class="font-semibold text-slate-800 dark:text-slate-200 block mb-1 transition-colors">
+                    {paper.title}
+                  </span>
+                )}
+                {((paper.authors && paper.authors.length > 0) || paper.year) && (
+                  <p class="text-slate-600 dark:text-slate-400 block leading-relaxed transition-colors">
+                    {[paper.authors && paper.authors.join(', '), paper.year && `(${paper.year})`].filter(Boolean).join(' ')}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

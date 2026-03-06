@@ -1,0 +1,21 @@
+---
+title: "Chosen Plaintext Attack"
+acronym: "CPA"
+description: "A passive security notion where the adversary can query an encryption oracle but has no access to a decryption oracle."
+tags: ["Passive"]
+introduced_in:
+  - title: ""
+    authors: []
+    year: 
+    link: ""
+implies: []
+implied_by: ["CPAD"]
+---
+
+CPA represents the standard baseline for passive security in encryption schemes.
+All FHE schemes usable in practice (BFV, BGV, CKKS, and TFHE) natively achieve CPA security.
+
+**The CPA Game:**
+In the CPA game, the adversary has access to an encryption oracle (which is strictly necessary only in the private-key setting, as public-key adversaries can encrypt on their own) and a challenge oracle.
+*   The challenge oracle can only be invoked once with two distinct messages ($m_0, m_1$), returning an encryption of $m_b$ based on a secret bit $b$ chosen by the challenger.
+*   When evaluating homomorphic schemes under the CPA game, the adversary performs homomorphic evaluations entirely on their own. The adversary wins if they can guess the secret bit $b$.

@@ -81,8 +81,13 @@ notions.forEach(notion => {
     }
   };
 
-  // Render initially
-  document.addEventListener('DOMContentLoaded', renderGraphs);
+  // Render initially: module scripts are deferred, so DOM is likely ready.
+  // We use readyState to handle both normal loads and HMR/race conditions.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderGraphs);
+  } else {
+    renderGraphs();
+  }
   
   // Re-render when theme changes
   document.addEventListener('theme-changed', renderGraphs);
