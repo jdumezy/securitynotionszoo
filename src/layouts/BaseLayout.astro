@@ -1,7 +1,7 @@
 ---
-import '../styles/global.css';
-import ThemeToggle from '../components/ThemeToggle.astro';
-import SEO from '../components/SEO.astro';
+import "../styles/global.css";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import SEO from "../components/SEO.astro";
 
 interface Props {
   title: string;
@@ -10,56 +10,74 @@ interface Props {
   type?: string;
 }
 
-const { 
-  title, 
-  description = 'A static taxonomy site for cryptography security notions, focused on FHE.',
+const {
+  title,
+  description = "A taxonomy site for cryptography security notions focused on FHE.",
   image,
-  type
+  type,
 } = Astro.props;
 ---
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <SEO title={title} description={description} image={image} type={type} />
     <script is:inline>
       const theme = (() => {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-          return localStorage.getItem('theme');
+        if (
+          typeof localStorage !== "undefined" &&
+          localStorage.getItem("theme")
+        ) {
+          return localStorage.getItem("theme");
         }
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          return 'dark';
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          return "dark";
         }
-        return 'light';
+        return "light";
       })();
-    
-      if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
+
+      if (theme === "light") {
+        document.documentElement.classList.remove("dark");
       } else {
-        document.documentElement.classList.add('dark');
+        document.documentElement.classList.add("dark");
       }
-      window.localStorage.setItem('theme', theme);
+      window.localStorage.setItem("theme", theme);
     </script>
   </head>
-  <body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-200 antialiased selection:bg-accent selection:text-white min-h-screen flex flex-col transition-colors duration-300">
+  <body
+    class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-200 antialiased selection:bg-accent selection:text-white min-h-screen flex flex-col transition-colors duration-300"
+  >
     <div class="max-w-5xl mx-auto px-4 py-8 w-full flex-grow flex flex-col">
-      <header class="mb-12 border-b border-slate-200 dark:border-slate-800 pb-6">
+      <header
+        class="mb-12 border-b border-slate-200 dark:border-slate-800 pb-6"
+      >
         <nav class="flex justify-between items-center">
-          <a href="/" class="text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors">
+          <a
+            href="/"
+            class="text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors"
+          >
             SecurityNotionsZoo
           </a>
           <div class="flex items-center gap-4">
-            <a href="https://github.com/jdumezy/securitynotionszoo" target="_blank" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors">GitHub</a>
+            <a
+              href="https://github.com/jdumezy/securitynotionszoo"
+              target="_blank"
+              class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+              >GitHub</a
+            >
             <ThemeToggle />
           </div>
         </nav>
       </header>
-      
+
       <main class="flex-grow">
         <slot />
       </main>
-      
-      <footer class="mt-16 border-t border-slate-200 dark:border-slate-800 pt-8 pb-4 text-center text-slate-500 dark:text-slate-500 text-sm transition-colors">
-        <p>&copy; {new Date().getFullYear()} SecurityNotionsZoo. Built with Astro, Tailwind CSS, and Mermaid.js.</p>
+
+      <footer
+        class="mt-16 border-t border-slate-200 dark:border-slate-800 pt-8 pb-4 text-center text-slate-500 dark:text-slate-500 text-sm transition-colors"
+      >
+        <p>&copy; {new Date().getFullYear()} SecurityNotionsZoo.</p>
       </footer>
     </div>
   </body>

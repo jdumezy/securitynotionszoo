@@ -1,14 +1,8 @@
 # Security Notions Zoo
 
-A static taxonomy site for cryptography security notions, specifically focusing on Fully Homomorphic Encryption (FHE) and Beyond. Check out the interactive map tracking the relations, implications, and definitions of various security games.
+A taxonomy site for cryptography security notions, specifically focusing on Fully Homomorphic Encryption (FHE).
 
-## Tech Stack
-
-This project is built using:
-- **[Astro](https://astro.build/)**: For blistering fast static site generation.
-- **[Tailwind CSS](https://tailwindcss.com/)**: For clean, utility-first styling with a dark-mode by default academic aesthetic.
-- **[MDX](https://mdxjs.com/)**: For writing rich content in Markdown with interactive components.
-- **[Mermaid.js](https://mermaid.js.org/)**: For dynamically rendering relation maps and implication graphs client-side.
+This project is built using [Astro](https://astro.build/), [Tailwind CSS](https://tailwindcss.com/), [MDX](https://mdxjs.com/), and [Mermaid.js](https://mermaid.js.org/).
 
 ## Local Development
 
@@ -25,10 +19,16 @@ This project is built using:
 
 ## Contributing
 
-We welcome contributions! If you'd like to add a new security notion to the taxonomy, or improve an existing one:
+We welcome contributions. If you'd like to add a new security notion to the taxonomy, or improve an existing one:
 
 1. Fork the repository
 2. Add your notion to `src/content/notions/` following the existing Zod schema (title, acronym, description, tags, introduced_in, implies, implied_by).
 3. Submit a Pull Request!
 
-If you spot any errors, feel free to open an issue or reach out!
+If you spot any errors, feel free to open an issue or reach out.
+
+This website is maintained by Jules Dumezy.
+
+## License
+
+This project is licensed under the terms of the [MIT license](LICENSE).
