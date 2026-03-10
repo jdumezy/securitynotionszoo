@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import ThemeToggle from "../components/ThemeToggle.astro";
 import SEO from "../components/SEO.astro";
+import Logo from "../components/Logo.astro";
 
 interface Props {
   title: string;
@@ -54,8 +55,9 @@ const {
         <nav class="flex justify-between items-center">
           <a
             href="/"
-            class="text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors"
+            class="flex items-center gap-3 text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors"
           >
+            <Logo class="w-8 h-8 text-current" />
             SecurityNotionsZoo
           </a>
           <div class="flex items-center gap-4">
