@@ -1,0 +1,21 @@
+---
+title: "Chosen Ciphertext Attack 2"
+acronym: "CCA2"
+description: "An adaptive chosen ciphertext attack where the adversary has access to a decryption oracle both before and after the challenge, restricted only from querying the exact challenge ciphertext."
+tags: ["Active", "Adaptive", "Non-malleable"]
+introduced_in:
+  - title: ""
+    authors: []
+    year: 
+    link: ""
+implies: ["vCCA", "CCA1"]
+implied_by: []
+---
+
+CCA2 (adaptive CCA security) is widely considered the strongest standard security notion for public-key encryption. However, it is well-known that malleability is directly contradictory with CCA2 security. Because homomorphic encryption inherently requires malleability, standard FHE schemes are trivially CCA2 insecure.
+
+**The CCA2 Game:**
+The LOR-CCA2 (or FTG-CCA2) game grants the adversary adaptive access to a decryption oracle across the entire game.
+*   Before the challenge ciphertext $c^*$ is published, the oracle decrypts any ciphertext.
+*   After the challenge ciphertext $c^*$ is published, the second-step decryption oracle continues to decrypt any ciphertext submitted by the adversary, with the sole exception being that it rejects the exact challenge ciphertext $c^*$. 
+*   Because the oracle is so permissive, any homomorphic scheme fails the CCA2 game (e.g., an adversary can trivially win by homomorphically adding 1 to the challenge ciphertext and submitting the resulting new ciphertext to the decryption oracle).

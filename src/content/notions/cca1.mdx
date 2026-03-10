@@ -1,0 +1,20 @@
+---
+title: "Chosen Ciphertext Attack 1"
+acronym: "CCA1"
+description: "A non-adaptive chosen ciphertext attack where the adversary has access to a decryption oracle only before the challenge ciphertext is published."
+tags: ["Active", "Non-adaptive"]
+introduced_in:
+  - title: ""
+    authors: []
+    year: 
+    link: ""
+implies: ["CPA", "funcCPA"]
+implied_by: ["vCCA", "CCA2"]
+---
+
+CCA1 (often called non-adaptive CCA security) grants the adversary temporary access to a decryption oracle. Building efficient FHE constructions that achieve CCA1 security remains an important and difficult open challenge, as all FHE schemes used in practice are trivially CCA1 insecure.
+
+**The CCA1 Game:**
+In the CCA1 experiment, the adversary can issue encryption requests and exactly one single challenge request.
+*   Before the challenge request, the adversary is granted unrestricted access to a decryption oracle that returns the decryption for any arbitrary ciphertext $c$.
+*   Once the challenge request is issued and the challenge ciphertext $c^*$ is generated, the decryption oracle closes and systematically replies $\bot$ to all subsequent decryption queries [16].
