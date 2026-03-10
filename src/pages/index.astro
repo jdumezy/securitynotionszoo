@@ -14,10 +14,26 @@ const allNotions = await getCollection("notions");
       Security Notions Taxonomy
     </h1>
     <p
-      class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl transition-colors"
+      class="text-lg text-slate-600 dark:text-slate-400 text-justify transition-colors mb-4"
     >
       A taxonomy of cryptographic security notions, focusing on Fully
       Homomorphic Encryption (FHE).
+    </p>
+    <p
+      class="text-lg text-slate-600 dark:text-slate-400 text-justify transition-colors"
+    >
+      Because most FHE constructions rely on lattices, interesting things happen
+      due to ciphertext malleability and inherent noise. This has led to the
+      definition of a wide variety of specialized attacks and security notions.
+      The relationship map below illustrates this landscape of alternative
+      security definitions tailored for FHE. Directed arrows indicate
+      theoretical implications (<span class="font-serif italic">A</span> &rarr; <span
+        class="font-serif italic">B</span
+      > means <span class="font-serif italic">A</span> implies <span
+        class="font-serif italic">B</span
+      >, i.e. that <span class="font-serif italic">A</span> is (usually) a strictly
+      stronger notion than <span class="font-serif italic">B</span>). Click on
+      any notion in the graph or the list below for more information.
     </p>
   </div>
 
@@ -27,6 +43,7 @@ const allNotions = await getCollection("notions");
     >
       Relation Map
     </h2>
+
     <div
       class="bg-slate-100 dark:bg-slate-800/30 p-2 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-inner overflow-hidden transition-colors"
     >
