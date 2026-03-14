@@ -1,0 +1,89 @@
+## Overview
+
+The security notions in this zoo are all stated in terms of a common vocabulary drawn from provable security.
+This page introduces the key concepts needed to read and interpret these definitions: what kind of adversary we consider, how we measure advantage, and what the standard proof techniques look like.
+
+## Probabilistic Polynomial-Time (PPT)
+
+A **probabilistic polynomial-time** adversary is the standard model of an efficient attacker in modern cryptography.
+
+- **Polynomial-time** means the adversary's running time is bounded by some polynomial in the security parameter $\lambda$ (e.g., the key length). This captures the intuition that the attacker is computationally bounded - it cannot, for instance, exhaustively try all $2^\lambda$ keys.
+- **Probabilistic** means the adversary has access to a source of randomness and can make random choices during its execution. This models the fact that real attackers can flip coins, sample random values, and run randomized algorithms.
+
+Formally, we write $\mathcal{A}(1^\lambda)$ for an adversary that takes the security parameter in unary as input. Security is required to hold for *all* PPT adversaries, which means no efficient algorithm can break the scheme, regardless of its strategy.
+
+## Negligible Functions
+
+When we say a scheme is secure, we do not require the adversary's success probability to be exactly $1/2$ (for indistinguishability) or exactly $0$ (for key recovery). Instead, we allow a small *advantage* - but it must be **negligible**.
+
+A function $\varepsilon : \mathbb{N} \to \mathbb{R}_{\geq 0}$ is negligible if it vanishes faster than the inverse of any polynomial:
+
+$$
+\forall c > 0,\ \exists N,\ \forall \lambda > N : \varepsilon(\lambda) < \lambda^{-c}.
+$$
+
+Intuitively, a negligible quantity is so small that multiplying it by any polynomial in $\lambda$ still gives something that goes to zero. This means even if the adversary repeats its attack polynomially many times, its cumulative success probability remains negligible. Typical examples of negligible functions are $2^{-\lambda}$ and $\lambda^{-\log \lambda}$.
+
+A function that is *not* negligible is called **non-negligible**. For example, $\lambda^{-3}$ is non-negligible: a scheme that can be broken with probability $\lambda^{-3}$ is considered insecure, because an attacker repeating the attack $\lambda^4$ times would succeed with overwhelming probability.
+
+## Game-Based Security Definitions
+
+A **security game** (also called a security experiment) is a formal protocol between a **challenger** and an **adversary** $\mathcal{A}$. The challenger simulates the "honest" world - it generates keys, answers oracle queries, and issues challenges. The adversary tries to win the game by guessing a hidden bit, recovering a key, or producing a forgery.
+
+The **advantage** of $\mathcal{A}$ in a game $G$ is a measure of how much better than random it does:
+
+$$
+\mathsf{Adv}^G_{\mathcal{A}}(\lambda) = \left| \Pr[\mathcal{A} \text{ wins}] - \Pr[\text{random guess wins}] \right|.
+$$
+
+For indistinguishability games the baseline is $1/2$ (a random coin flip), so $\mathsf{Adv} = |\Pr[b' = b] - 1/2|$.
+
+A scheme is **secure** with respect to game $G$ if $\mathsf{Adv}^G_\mathcal{A}(\lambda)$ is negligible for every PPT adversary $\mathcal{A}$.
+
+## Reductions
+
+A **reduction** is the primary tool for proving security. To show that scheme $\Pi$ is secure under assumption $\mathsf{A}$ (e.g., the hardness of LWE), we construct an algorithm $\mathcal{B}$ that:
+
+1. receives an instance of problem $\mathsf{A}$ as input,
+2. simulates the security game for $\Pi$ toward $\mathcal{A}$,
+3. uses $\mathcal{A}$'s output to solve the $\mathsf{A}$ instance.
+
+If $\mathcal{A}$ breaks $\Pi$ with non-negligible advantage, then $\mathcal{B}$ solves $\mathsf{A}$ with non-negligible probability - contradicting the assumption that $\mathsf{A}$ is hard. Therefore, no PPT adversary can break $\Pi$ with non-negligible advantage.
+
+The quality of a reduction is measured by how much it degrades the advantage: if $\mathcal{A}$ wins with advantage $\varepsilon$, does $\mathcal{B}$ solve $\mathsf{A}$ with advantage $\varepsilon$, or only $\varepsilon / q$ where $q$ is the number of queries? **Tight reductions** (where the loss factor is constant) are preferred because they allow smaller security parameters without sacrificing concrete security.
+
+## Game Hopping
+
+**Game hopping** (also called game playing) is a proof technique introduced by Bellare and Rogaway in which a proof proceeds through a sequence of games $G_0, G_1, \ldots, G_n$:
+
+- $G_0$ is the original security game.
+- $G_n$ is a trivial game in which the adversary's advantage is clearly $0$ (or $1/2$ for indistinguishability).
+- Each consecutive pair $G_i, G_{i+1}$ differs by a single conceptual step, and the change in the adversary's advantage between consecutive games is bounded.
+
+By a triangle inequality argument:
+
+$$
+\mathsf{Adv}^{G_0}_\mathcal{A} \leq \sum_{i=0}^{n-1} \left| \mathsf{Adv}^{G_i}_\mathcal{A} - \mathsf{Adv}^{G_{i+1}}_\mathcal{A} \right| + \mathsf{Adv}^{G_n}_\mathcal{A}.
+$$
+
+Each hop is justified either by arguing the games are perfectly indistinguishable (so the adversary cannot tell the difference and has identical advantage), or by a reduction showing that distinguishing the two games would solve a hard problem.
+
+## Hybrid Arguments
+
+A **hybrid argument** is a special case of game hopping used to handle multiple independent instances of the same operation (e.g., many ciphertexts, many challenge queries).
+
+Consider proving security for $q$ ciphertexts using a scheme secure for one. Define hybrid games $H_0, H_1, \ldots, H_q$ where $H_i$ encrypts the first $i$ messages as $m_1$ ("right") and the remaining $q - i$ messages as $m_0$ ("left"). Consecutive hybrids $H_i$ and $H_{i+1}$ differ only in the encryption of the $i{+}1$-th ciphertext, so any adversary distinguishing them breaks single-ciphertext security. A union bound then gives:
+
+$$
+\mathsf{Adv}^{H_0}_\mathcal{A} \leq q \cdot \mathsf{Adv}^{\text{single}}_\mathcal{B}.
+$$
+
+If $q$ is polynomial in $\lambda$ and the single-ciphertext advantage is negligible, the total advantage remains negligible. This is why CPA security with one challenge ciphertext implies security with polynomially many - and it is the standard argument behind the equivalence of single-challenge (FTG) and multiple-challenge (LOR) formulations for CPA and standard CCA notions.
+
+Notably, for some FHE-specific notions (CPAD, vCCAD in the approximate setting), the hybrid argument *fails* because the games are not perfectly indistinguishable across hybrids, which is precisely why the multi-challenge variants of those notions are strictly stronger than their single-challenge counterparts.
+
+## Further Reading
+
+The game-playing technique was systematized by [Bellare and Rogaway (2004)](https://eprint.iacr.org/2004/331).
+Hybrid arguments and their role in proving CPA security appear in most cryptography textbooks; see Katz and Lindell, *Introduction to Modern Cryptography* (3rd ed.), or Boneh and Shoup, *A Graduate Course in Applied Cryptography*.
+For the failure of hybrid arguments in the approximate FHE setting, see [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf).
