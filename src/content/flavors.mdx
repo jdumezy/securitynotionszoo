@@ -1,0 +1,51 @@
+## Overview
+
+When we say a scheme is "CPA-secure" or "CCA1-secure," we are implicitly referring to a specific *flavor* of security - most commonly indistinguishability (IND).
+However, several other flavors exist, each capturing a different aspect of what it means for an encryption scheme to be secure.
+Understanding these distinctions matters because equivalences that hold between flavors for standard encryption do not always carry over to the homomorphic setting.
+
+### Indistinguishability (IND)
+
+Indistinguishability is the most common formulation.
+The adversary chooses two messages $m_0, m_1$ and receives an encryption of one of them, chosen at random.
+It must guess which one was encrypted.
+A scheme is IND-secure (under a given attack model) if no efficient adversary can guess correctly with non-negligible advantage over $1/2$.
+This is the flavor used throughout this zoo unless stated otherwise, and the IND prefix is generally omitted.
+
+### Semantic Security (SS)
+
+Semantic security, introduced by Goldwasser and Micali, captures the intuition that the ciphertext reveals no partial information about the plaintext.
+Formally, anything an adversary can compute about the plaintext given the ciphertext, it could also compute without the ciphertext.
+For standard public-key encryption, semantic security is equivalent to IND-CPA.
+This equivalence was established by Goldwasser and Micali (1984).
+
+### Non-Malleability (NM)
+
+Non-malleability requires that an adversary, given a challenge ciphertext, cannot produce a *related* ciphertext - one whose plaintext bears a meaningful relation to the challenge plaintext.
+This flavor is particularly relevant in the FHE context because homomorphic evaluation is, by definition, a form of malleability.
+Non-malleability under CCA2 is equivalent to IND-CCA2 for standard encryption, but the two flavors diverge under weaker attack models.
+
+### Key Recovery (KR)
+
+Key recovery security simply requires that no efficient adversary can recover the secret key.
+This is strictly weaker than indistinguishability: a scheme can be KR-secure while leaking partial information about plaintexts.
+KR variants are occasionally relevant when analyzing the practical impact of attacks (e.g., certain CPAD attacks aim at full key recovery rather than just distinguishing).
+
+### One-Wayness (OW)
+
+One-wayness requires that given a ciphertext, the adversary cannot recover the entire plaintext.
+This is stronger than KR but weaker than IND.
+For deterministic encryption or schemes with small message spaces, OW and IND can differ substantially.
+
+### Left-or-Right (LOR) vs Find-then-Guess (FTG)
+
+These are not separate security flavors but rather two equivalent formulations of indistinguishability games.
+In the Find-then-Guess (FTG) formulation (also called single-challenge), the adversary issues one challenge query with two messages.
+In the Left-or-Right (LOR) formulation (also called multiple-challenge), the adversary can issue many challenge queries.
+For CPA and CCA security of standard encryption, Bellare, Desai, Jokipii, and Rogaway (1997) showed these are equivalent up to a factor linear in the number of queries.
+However, for CPAD and vCCAD security in the approximate FHE regime, Brzuska et al. (2024) proved that the multiple-challenge variants are strictly stronger.
+
+### Further Reading
+
+The systematic study of relations among security flavors for public-key encryption was initiated by Bellare, Desai, Pointcheval, and Rogaway (CRYPTO 1998) for the public-key setting and by Bellare, Desai, Jokipii, and Rogaway (FOCS 1997) for the symmetric setting.
+For a textbook treatment, see Katz and Lindell, *Introduction to Modern Cryptography*.

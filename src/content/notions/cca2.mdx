@@ -12,10 +12,47 @@ implies: ["vCCAD"]
 implied_by: []
 ---
 
-CCA2 (adaptive CCA security) is widely considered the strongest standard security notion for public-key encryption. However, it is well-known that malleability is directly contradictory with CCA2 security. Because homomorphic encryption inherently requires malleability, standard FHE schemes are trivially CCA2 insecure.
+## Overview
 
-**The CCA2 Game:**
-The LOR-CCA2 (or FTG-CCA2) game grants the adversary adaptive access to a decryption oracle across the entire game.
-*   Before the challenge ciphertext $c^*$ is published, the oracle decrypts any ciphertext.
-*   After the challenge ciphertext $c^*$ is published, the second-step decryption oracle continues to decrypt any ciphertext submitted by the adversary, with the sole exception being that it rejects the exact challenge ciphertext $c^*$. 
-*   Because the oracle is so permissive, any homomorphic scheme fails the CCA2 game (e.g., an adversary can trivially win by homomorphically adding 1 to the challenge ciphertext and submitting the resulting new ciphertext to the decryption oracle).
+Chosen Ciphertext Attack 2 (CCA2) security, also known as IND-CCA2 or adaptive chosen ciphertext security, is the strongest standard indistinguishability-based security notion for encryption. It extends CCA1 by allowing the adversary to continue querying the decryption oracle *even after* receiving the challenge ciphertext, with the sole restriction that it may not submit the challenge ciphertext itself for decryption.
+
+CCA2 captures a very powerful adversary model: one who can adaptively craft decryption queries based on the challenge ciphertext, attempting to extract information through related ciphertexts. This notion is considered the gold standard for general-purpose public-key encryption, although it is sometimes critized for being too strong.
+
+In the FHE context, CCA2 is incompatible with homomorphic evaluation. Given a challenge ciphertext $c^*$ encrypting $m_b$, an adversary can homomorphically compute, say, $c' \leftarrow \mathsf{Eval}(f, c^*)$ for a known function $f$, then query the decryption oracle on $c'$ to recover $f(m_b)$, which trivially distinguishes $m_0$ from $m_1$ if $f(m_0) \neq f(m_1)$.
+
+## Formal Definition
+
+The IND-CCA2 security game proceeds as follows:
+
+1. The challenger generates a key pair $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to $\mathcal{A}$.
+2. **Phase 1 (pre-challenge):** $\mathcal{A}$ has access to a decryption oracle $\mathsf{Dec}(sk, \cdot)$ and may submit arbitrary ciphertexts for decryption.
+3. $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$.
+4. The challenger samples $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
+5. **Phase 2 (post-challenge):** $\mathcal{A}$ **retains** access to the decryption oracle, but may not query it on $c^*$.
+6. $\mathcal{A}$ outputs a guess $b'$.
+
+The advantage is defined as:
+
+$$
+\mathsf{Adv}^{\mathsf{IND\text{-}CCA2}}_{\Pi, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|
+$$
+
+The scheme is IND-CCA2 secure if this advantage is negligible for all PPT adversaries.
+
+## Attacks & Relevance
+
+CCA2 security prevents an adversary from exploiting the malleability of ciphertexts. Classic attacks thwarted by CCA2 include Bleichenbacher's attack on RSA PKCS#1 v1.5, where an adversary multiplies a target ciphertext by known values and uses a decryption oracle (via error messages) to gradually recover the plaintext, as well as padding oracle attacks more generally.
+
+For standard (non-homomorphic) encryption, CCA2 is the expected security level in practice. It is required for secure key transport, hybrid encryption, and any setting where ciphertexts travel over channels controlled by an adversary.
+
+For FHE, as noted above, CCA2 is fundamentally at odds with the homomorphic property. The ability to meaningfully transform ciphertexts is exactly what CCA2 is designed to prevent. This has led to a research directions: relaxed CCA-type notions that accommodate homomorphic evaluation (such as CCA1, funcCPA, CPAD, or vCCA).
+
+## Achieving This Notion
+
+For standard public-key encryption, CCA2 security is achieved through several well-known paradigms: the Cramer–Shoup scheme (the first practical CCA2-secure scheme without random oracles), the Fujisaki–Okamoto transform (in the random oracle model, widely used in post-quantum KEMs such as those in the NIST standards), and OAEP for RSA-based encryption. In the lattice setting, CCA2-secure (non-homomorphic) encryption can be built from LWE using standard transformations.
+
+For FHE, achieving full CCA2 security while retaining homomorphic functionality is generally impossible, as it is fundammentally incompatible with malleability.
+
+## Further Reading
+
+The formal definition of CCA2 was given by Rackoff and Simon (1991), building on the CCA1 notion of Naor and Yung (1990). The Cramer–Shoup cryptosystem (1998) was the first efficient construction achieving CCA2 without random oracles.
