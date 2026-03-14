@@ -1,7 +1,7 @@
 ---
 title: "Chosen Ciphertext Attack 1"
 acronym: "CCA1"
-description: "A non-adaptive chosen ciphertext attack where the adversary has access to a decryption oracle only before the challenge ciphertext is published."
+description: "Non-adaptive chosen ciphertext attack where the adversary has access to a decryption oracle only before the challenge ciphertext is published."
 tags: ["Active", "Non-adaptive"]
 introduced_in:
   - title: ""
@@ -14,11 +14,13 @@ implied_by: ["vCCA"]
 
 ## Overview
 
-Chosen Ciphertext Attack 1 (CCA1) security, also known as IND-CCA1 or lunchtime attack security, strengthens CPA by giving the adversary access to a decryption oracle *before* seeing the challenge ciphertext. The adversary can submit arbitrary ciphertexts for decryption during a learning phase, but once the challenge is issued, the decryption oracle is revoked.
+Chosen Ciphertext Attack 1 (CCA1) security, also known as IND-CCA1 or lunchtime attack security, strengthens CPA by giving the adversary access to a decryption oracle *before* seeing the challenge ciphertext.
+The adversary can submit arbitrary ciphertexts for decryption during a learning phase, but once the challenge is issued, the decryption oracle is revoked.
 
 The name "lunchtime attack" comes from the scenario where an attacker has temporary physical access to a decryption device - for example, while its owner is away - and can decrypt ciphertexts of their choosing, but must later break a target ciphertext without further access.
 
-In the FHE setting, CCA1 has gained renewed interest because it represents the strongest "standard" notion that is compatible with homomorphic evaluation. Since homomorphic operations necessarily produce new ciphertexts related to existing ones, CCA2 security (which allows post-challenge decryption queries) is incompatible with homomorphic properties.
+In the FHE setting, CCA1 has gained renewed interest because it represents the strongest "standard" notion that is compatible with homomorphic evaluation.
+Since homomorphic operations necessarily produce new ciphertexts related to existing ones, CCA2 security (which allows post-challenge decryption queries) is incompatible with homomorphic properties.
 
 ## Formal Definition
 
@@ -41,16 +43,18 @@ The scheme is IND-CCA1 secure if this advantage is negligible for all PPT advers
 
 ## Attacks & Relevance
 
-CCA1 security protects against adversaries who can temporarily exploit decryption capabilities to learn structural information about the scheme before attempting to break a target ciphertext. This covers scenarios such as an attacker with temporary access to a decryption key or device, an insider who loses access privileges before the sensitive message is transmitted, or an adversary who can exploit decryption-related side channels during a setup phase.
+CCA1 security protects against adversaries who can temporarily exploit decryption capabilities to learn structural information about the scheme before attempting to break a target ciphertext.
+This covers scenarios such as an attacker with temporary access to a decryption key or device, an insider who loses access privileges before the sensitive message is transmitted, or an adversary who can exploit decryption-related side channels during a setup phase.
 
-In the FHE context, CCA1 is particularly relevant because it is the strongest indistinguishability-based notion that does not inherently conflict with homomorphic evaluation. After the challenge phase, the adversary cannot query decryption, so the fact that homomorphic operations produce related ciphertexts does not trivially break the game. This makes CCA1 a natural security target for FHE schemes deployed in settings where the adversary may have had prior access to decryption capabilities.
+In the FHE context, CCA1 is particularly relevant because it is the strongest indistinguishability-based notion that does not inherently conflict with homomorphic evaluation.
+After the challenge phase, the adversary cannot query decryption, so the fact that homomorphic operations produce related ciphertexts does not trivially break the game.
+This makes CCA1 a natural security target for FHE schemes deployed in settings where the adversary may have had prior access to decryption capabilities.
 
 ## Achieving This Notion
 
-Constructing CCA1-secure FHE is non-trivial. Generic transformations from CPA to CCA1 for standard encryption (e.g., using non-interactive zero-knowledge proofs in the Naor–Yung double encryption paradigm) are known, but adapting these to preserve homomorphic properties requires care, as known FHE schemes are usually not perfect correct.
-*We should probably add more papers, like GG-GSW.*
+Constructing CCA1-secure FHE is non-trivial. Generic transformations from CPA to CCA1 for standard encryption (e.g., using non-interactive zero-knowledge proofs in the Naor-Yung double encryption paradigm) are known, but adapting these to preserve homomorphic properties requires care, as known FHE schemes are usually not perfect correct.
+Recent constructions like [GG-GSW](https://eprint.iacr.org/2026/316.pdf) by Nguyen make use of lattice trapdoors to achieve CCA1 leveled homomorphic encryption.
 
 ## Further Reading
 
-*Todo*
-
+The notion was originally described in a paper from [Naor and Yung (1990)](https://www.wisdom.weizmann.ac.il/~naor/PAPERS/cca.pdf).

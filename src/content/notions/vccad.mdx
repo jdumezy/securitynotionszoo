@@ -1,7 +1,7 @@
 ---
-title: "Verified Chosen Ciphertext Attack --- TBD"
+title: "Verified Chosen Ciphertext Attack with Decryption"
 acronym: "vCCAD"
-description: "TBD."
+description: "Strengthens vCCA to cover approximate FHE by combining semantic malleability filtering with CPAD-style noise-leakage protection."
 tags: ["Active", "Verifiable"]
 introduced_in:
   - title: "Relations among new CCA security notions for approximate FHE"
@@ -12,4 +12,62 @@ implies: ["vCCA", "sCPAD"]
 implied_by: ["CCA2"]
 ---
 
-TBD
+## Overview
+
+Verified Chosen Ciphertext Attack with Decryption (vCCAD) security, introduced by Brzuska, Canard, Fontaine, Phan, Pointcheval, Renard, and Sirdey, is a strengthening of vCCA security designed to cover the full spectrum of FHE schemes, including approximate ones.
+While vCCA was defined and studied by Manulis and Nguyen only under the correctness assumption, vCCAD adapts the approach to the general regime by incorporating the CPAD-style decryption oracle semantics into the vCCA framework.
+
+The key insight is that vCCA's post-challenge decryption oracle filters ciphertexts based on whether the challenge ciphertext appears among their extracted inputs (a syntactic check).
+vCCAD instead uses a semantic check: it filters ciphertexts based on whether the left and right plaintext evaluations (corresponding to the two challenge messages) differ.
+A ciphertext derived from the challenge is accepted by the vCCAD oracle if the homomorphic function evaluated on it produces the same result regardless of which challenge message was encrypted - meaning the decryption result cannot help the adversary distinguish.
+
+This semantic filtering is strictly more permissive than vCCA's syntactic filtering (every ciphertext accepted by vCCA is also accepted by vCCAD, but not vice versa), making vCCAD a seemingly weaker game.
+Yet because vCCAD also inherits CPAD-style tracking of left and right messages across all oracle queries, it captures both the malleability attacks that vCCA prevents and the noise-leakage attacks that CPAD prevents.
+
+Brzuska et al. proved that vCCAD is the strongest CCA security notion known to be achievable by FHE in the general regime, with strict implications $\mathsf{CPAD} \prec \mathsf{vCCAD}$ and $\mathsf{vCCA} \prec \mathsf{vCCAD}$.
+In the correct regime, however, vCCAD and vCCA are all equivalent.
+
+## Formal Definition
+
+The vCCAD game is a multiple-challenge game maintaining the same state $S$ of message-message-ciphertext triplets as the CPAD game, and assumes the same extractor $\mathsf{Extract}$ as the vCCA game.
+In the private-key setting, the decryption oracle is defined as follows:
+
+**Decryption request.** On query $(\texttt{ciphertext}, c)$:
+1. Compute $(f, c_1, \ldots, c_K) = \mathsf{Extract}(c)$.
+2. If $f(\mathsf{left}(c_1), \ldots, \mathsf{left}(c_K)) \neq f(\mathsf{right}(c_1), \ldots, \mathsf{right}(c_K))$, return $\bot$.
+3. Otherwise, return $\mathsf{Dec}(c)$.
+
+Where $\mathsf{left}(c) = S[i].m_0$ if $c$ is registered at index $i$ in the state, and $\bot$ otherwise (symmetrically for $\mathsf{right}$). By convention, $f(\ldots) = \bot$ whenever any argument is $\bot$.
+
+In the public-key setting, an additional extractor $\mathsf{Extract}'$ is needed to recover the message and randomness from fresh ciphertexts the adversary generated on its own (since these are not registered in the game state).
+The $\mathsf{left}'$ and $\mathsf{right}'$ functions fall back to $\mathsf{Extract}'$ when a ciphertext is not found in the state.
+
+Encryption, challenge, and evaluation requests follow the same structure as the CPAD game.
+The scheme is vCCAD-secure if the adversary's advantage is negligible for all PPT adversaries.
+
+## Attacks & Relevance
+
+vCCAD security simultaneously prevents both classes of attacks that affect FHE in the general regime.
+First, like vCCA, it prevents malleability-based attacks where an adversary homomorphically transforms the challenge ciphertext and submits the result for decryption to extract information about the challenge plaintext.
+Second, like CPAD, it prevents noise-leakage attacks where the adversary exploits decryptions of legitimately derived ciphertexts to recover secret key material from approximate decryption errors.
+
+The separation results established by Brzuska et al. show that neither vCCA nor CPAD alone is sufficient in the approximate FHE setting.
+vCCA does not imply $\mathsf{CPAD}_2$ (the decryption noise leakage is invisible to the vCCA game), and CPAD does not imply vCCA (the CPAD game provides no decryption oracle for adversary-crafted ciphertexts).
+vCCAD subsumes both. Furthermore, unlike vCCA where single and multiple challenge variants are equivalent, the multiple-challenge variant of vCCAD is strictly stronger than its single-challenge counterpart ($\mathsf{vCCAD}^{SC} \prec \mathsf{vCCAD}$) in the general regime.
+
+## Achieving This Notion
+
+Brzuska et al. showed that several of the construction blueprints from Manulis and Nguyen can be adapted to achieve vCCAD security, provided the underlying FHE is CPAD-secure (or sCPAD-secure in the public-key case) rather than merely CPA-secure.
+The Encrypt-then-Sign blueprint (private key) achieves vCCAD from a CPAD-secure FHE, a SUF-CMA signature scheme, and a straightline-extractable SNARK.
+The CCA2-Companion-Ciphertext blueprint (public key, designated verifier) achieves vCCAD from an sCPAD-secure FHE, a CCA2-secure companion scheme, and a straightline-extractable SNARK.
+
+For the public-key, public-verifier setting, the Naor-Yung-based blueprint from Manulis and Nguyen cannot be used when perfect correctness does not hold.
+Brzuska et al. therefore proposed a new Encrypt-then-Prove blueprint that replaces the signature with a publicly verifiable zk-SNARK for the well-formedness language, achieving vCCAD security from an sCPAD-secure FHE under simulation-extractability of the well-formedness SNARK and straightline-extractability of the evaluation SNARK.
+
+## Further Reading
+
+The vCCAD notion was introduced in Brzuska, Canard, Fontaine, Phan, Pointcheval, Renard, and Sirdey (ePrint 2024/812).
+For the underlying vCCA framework, see Manulis and Nguyen (Eurocrypt 2024).
+The Strong CPAD notion required by the public-key constructions was introduced by Bernard, Joye, Smart, and Walter (ePrint 2024/1718).
+For practical instantiation prospects, Ganesh, Nitulescu, and Soria-Vazquez (Journal of Cryptology 2023) provide SNARKs for ring arithmetic that could serve as the proof component.
+The paper also discusses connections to the application-aware security paradigm of Alexandru et al. (ePrint 2024/203), suggesting future work on relativized variants $\mathcal{F}_C$-vCCAD restricted to specific function classes.

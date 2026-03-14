@@ -1,7 +1,7 @@
 ---
 title: "Verified Chosen Ciphertext Attack"
 acronym: "vCCA"
-description: "TBD."
+description: "CCA2 relaxation for FHE using a SNARK-based extractor to filter post-challenge decryption queries derived from the challenge ciphertext."
 tags: ["Active", "Verifiable"]
 introduced_in:
   - title: "Fully Homomorphic Encryption beyond IND-CCA1 Security: Integrity through Verifiability"
@@ -12,4 +12,58 @@ implies: ["IV-CCA"]
 implied_by: ["CCA2"]
 ---
 
-TBD
+## Overview
+
+Verified Chosen Ciphertext Attack (vCCA) security, introduced by Manulis and Nguyen, is a relaxation of CCA2 security designed to be compatible with the malleable nature of FHE.
+The core idea is to augment the FHE scheme with machinery that proves the well-formedness of ciphertexts - both fresh ciphertexts (direct outputs of encryption) and evaluated ciphertexts (derived through genuine homomorphic operations).
+The decryption function rejects any ciphertext that fails verification.
+
+The motivation arises from the fundamental tension between CCA2 security and homomorphic evaluation: CCA2 prevents any meaningful ciphertext transformation, which is exactly what FHE enables.
+Meanwhile, CCA1 does not provide post-challenge decryption access.
+vCCA occupies a middle ground: it grants the adversary a post-challenge decryption oracle (like CCA2), but this oracle rejects any ciphertext that is a byproduct of the challenge ciphertext - identified by means of a witness extractor derived from an underlying SNARK.
+This filters out exactly the queries that would allow trivial wins via homomorphic manipulation of the challenge, while still permitting decryption of unrelated ciphertexts.
+
+Manulis and Nguyen proved that vCCA is strictly stronger than CCA1 and strictly weaker than CCA2.
+Importantly, the single-challenge and multiple-challenge variants of vCCA are equivalent, as the standard hybrid argument applies: the extractor-based filtering prevents an adversary from detecting the transition point in a hybrid game.
+
+## Formal Definition
+
+The vCCA security game assumes the encryption scheme is augmented with a PPT witness extractor $\mathsf{Extract}: \mathcal{C} \times \mathcal{X} \to (\mathcal{F}_H \cup \{\mathsf{id}\}) \times \mathcal{C}^*$ such that for an evaluated ciphertext $c = \mathsf{Eval}(f, c_1, \ldots, c_K)$, we have $\mathsf{Extract}(c) = (f, c_1, \ldots, c_K)$, and for a fresh ciphertext, $\mathsf{Extract}(c) = (\mathsf{id}, c)$.
+
+The game proceeds as a standard CCA2 game with two decryption phases:
+
+1. **Phase 1 (pre-challenge).** On query $(\texttt{ciphertext}, c)$: return $\mathsf{Dec}(c)$.
+2. The adversary issues the challenge query and receives $c^*$.
+3. **Phase 2 (post-challenge).** On query $(\texttt{ciphertext}, c)$: compute $(f, c_1, \ldots, c_K) = \mathsf{Extract}(c)$. If $c^* \in \{c_1, \ldots, c_K\}$, return $\bot$. Otherwise return $\mathsf{Dec}(c)$.
+
+The multiple-challenge (LOR) variant replaces the single challenge ciphertext check with $C^* \cap \{c_1, \ldots, c_K\} \neq \emptyset$, where $C^*$ is the set of all challenge ciphertexts.
+Manulis and Nguyen's original definition is single-challenge (denoted $\mathsf{vCCA}^{SC}$ in the literature); Brzuska et al. proved that $\mathsf{vCCA}^{SC} \equiv \mathsf{vCCA}$.
+
+The scheme is vCCA-secure if the adversary's advantage is negligible for all PPT adversaries.
+
+## Attacks & Relevance
+
+vCCA security prevents an adversary from exploiting the homomorphic malleability of ciphertexts to extract information through the decryption oracle.
+In an FHE deployment, a decryption oracle naturally arises whenever the secret key holder decrypts results - if an adversary can influence what gets decrypted, it can try to submit homomorphically modified challenge ciphertexts (e.g., $\mathsf{Eval}(\mathsf{add}, c^*, \mathsf{Enc}(1))$) to learn the underlying plaintext.
+The vCCA decryption oracle blocks exactly these queries.
+
+However, vCCA was originally defined and studied under the correctness assumption.
+In the general regime where approximate FHE schemes are allowed, vCCA does not imply CPAD security - it only implies the weaker $\mathsf{CPAD}_1$ variant.
+Conversely, $\mathsf{CPAD}$ does not imply vCCA.
+This means that for approximate FHE deployments, vCCA alone may be insufficient: the decryption oracle leakage exploited by CPAD attacks is orthogonal to the malleability attacks that vCCA prevents.
+
+## Achieving This Notion
+
+Manulis and Nguyen proposed several construction blueprints for achieving vCCA from a CPA-secure and correct FHE scheme.
+The general strategy is to augment the scheme with proof machinery: fresh ciphertexts are made verifiable (via signatures in the private-key setting, or Naor-Yung double encryption in the public-key setting), and evaluated ciphertexts carry SNARK proofs of correct homomorphic derivation from well-formed inputs.
+The decryption function returns $\bot$ when verification fails.
+
+Specific blueprints include Encrypt-then-Sign (private key, using SUF-CMA signatures), Encrypt-then-MAC (private key, using a MAC), CCA2-Companion-Ciphertext (public key, designated verifier, pairing an FHE ciphertext with a CCA2-encrypted copy of the message and randomness), and a Naor-Yung-based construction (public key, public verifier).
+All require a SNARK for the language of correct homomorphic evaluations.
+
+## Further Reading
+
+The vCCA notion was introduced in Manulis and Nguyen (Eurocrypt 2024).
+Brzuska et al. (ePrint 2024/812) clarified the relationship between vCCA and CPAD: $\mathsf{vCCA}^{SC}$ implies $\mathsf{CPAD}_1$ but neither implies nor is implied by $\mathsf{CPAD}_2$ or full $\mathsf{CPAD}$, contrary to informal claims in the original paper.
+They also established that $\mathsf{vCCA}^{SC} \equiv \mathsf{vCCA}$ (the multi-challenge variant adds no strength) and that $\mathsf{vCCA}^{SC} \prec \mathsf{vCCAD}^{SC}$ in the general regime - motivating the stronger vCCAD notion.
+For the broader landscape of CCA relaxations for FHE, see also Viand, Knabenhans, and Hithnawi (arXiv 2023) who proposed CCA1-secure verifiable FHE constructions.

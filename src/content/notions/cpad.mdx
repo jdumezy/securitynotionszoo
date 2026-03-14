@@ -1,7 +1,7 @@
 ---
 title: "Chosen Plaintext Attack with Decryption"
 acronym: "CPAD"
-description: "A passive security notion where the adversary can only query an encryption oracle and perform legimtimate operations on ciphertexts."
+description: "Passive security notion extending CPA with a constrained decryption oracle restricted to legitimate ciphertexts."
 tags: ["Passive"]
 introduced_in:
   - title: "On the Security of Homomorphic Encryption on Approximate Numbers"
@@ -12,9 +12,57 @@ implies: ["CPA"]
 implied_by: ["vCCAD"]
 ---
 
-TBD
+## Overview
 
+Chosen Plaintext Attack with Decryption (CPAD) security is a seemingly mild extension of CPA security introduced for the setting of approximate Fully Homomorphic Encryption.
+In the CPAD game, the adversary is granted access to a highly constrained decryption oracle that accepts only legitimate ciphertexts - those produced by the encryption oracle or derived from legitimate ciphertexts through genuine homomorphic operations.
+The adversary also controls which homomorphic evaluations are performed.
 
-*Attack on CPA secure FHE schemes*
+The initial intuition is that CPAD should be equivalent to CPA: since the adversary knows the plaintext inputs of every homomorphic computation, it should be able to predict every output of this decryption oracle on its own.
+However, this reasoning implicitly relies on the correctness of the FHE scheme.
+For approximate schemes such as CKKS, decryption returns values that differ slightly from the exact plaintext, and these small differences leak information about the LWE noise embedded in ciphertexts.
+Li and Micciancio demonstrated that this leakage is sufficient to practically recover the secret key, showing that CPAD security is strictly stronger than CPA security for approximate FHE.
+While initially only targetting CKKS, CPAD attack have been extended to all LWE/RLWE based FHE schemes.
 
-Li and Micciancio, "exact" FHE schemes...
+## Formal Definition
+
+The CPAD security game is a Left-or-Right multiple-challenge game.
+Given a homomorphic encryption scheme $\mathcal{E}_H = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$, the game is parameterized by a hidden bit $b \xleftarrow{\textdollar} \{0,1\}$ and maintains an initially empty state $S$ of message-message-ciphertext triplets:
+
+1. **Key generation.** Run $(ek, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and give $ek$ to $\mathcal{A}$.
+2. **Encryption request.** On query $(\texttt{plaintext}, m)$, compute $c = \mathsf{Enc}(m)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m, m, c)]$.
+3. **Challenge request.** On query $(\texttt{test}, m_0, m_1)$ with $m_0 \neq m_1$, compute $c = \mathsf{Enc}(m_b)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m_0, m_1, c)]$.
+4. **Evaluation request.** On query $(\texttt{eval}, f, l_1, \ldots, l_K)$ with indices into $S$, compute $m'_0 = f(S[l_1].m_0, \ldots, S[l_K].m_0)$, $m'_1 = f(S[l_1].m_1, \ldots, S[l_K].m_1)$, and $c' = \mathsf{Eval}(f, S[l_1].c, \ldots, S[l_K].c)$. Return $c'$ to $\mathcal{A}$ and set $S := [S; (m'_0, m'_1, c')]$.
+5. **Decryption request.** On query $(\texttt{ciphertext}, l)$ with $l$ an index into $S$: if $S[l].m_0 \neq S[l].m_1$, return $\bot$. Otherwise return $\mathsf{Dec}(S[l].c)$.
+6. **Guessing stage.** $\mathcal{A}$ outputs a guess $b'$. It wins if $b' = b$.
+
+The scheme is CPAD-secure if the advantage $\mathsf{Adv}^{\mathsf{CPAD}}_{\Pi, \mathcal{A}}(\lambda) = |\Pr[b' = b] - 1/2|$ is negligible for all PPT adversaries.
+
+The key subtlety is that the decryption oracle returns $\mathsf{Dec}(S[l].c)$ rather than $S[l].m_0$.
+For correct FHE these coincide, making the oracle useless and CPAD equivalent to CPA.
+For approximate FHE, $\mathsf{Dec}(S[l].c) \neq S[l].m_0$ with overwhelming probability - the oracle leaks information the adversary cannot compute on its own.
+
+## Attacks & Relevance
+
+CPAD security captures a fundamental vulnerability of approximate FHE: the small errors introduced by homomorphic evaluation and decryption can leak secret key material.
+The original attack by Li and Micciancio targeted CKKS, showing that an adversary who can obtain decryptions of legitimately computed ciphertexts can reconstruct the secret key from the noise patterns.
+
+More recently, Checri, Sirdey, Boudguiga, and Bultel (CRYPTO 2024) as well as Cheon, Choe, Passelègue, Stehlé, and Suvanto (CCS 2024) demonstrated that schemes previously believed immune to CPAD attacks - including the "exact" schemes BFV, BGV, and TFHE - are also CPAD-insecure as soon as decryption errors can occur with non-negligible probability.
+This considerably broadened the scope of CPAD as a relevant security notion beyond the approximate FHE setting.
+
+CPAD security is relevant in any FHE deployment where the adversary can observe decrypted results of homomorphic computations it influences.
+This covers many practical scenarios: a client outsourcing computation to a server sees the decrypted output, and if it can choose or influence the inputs and the function being evaluated, it is effectively a CPAD adversary.
+
+## Achieving This Notion
+
+For CKKS, Li, Micciancio, Schultz, and Sorrell (CRYPTO 2022) proposed achieving CPAD security by applying noise flooding during decryption - adding sufficiently large random noise to the decrypted value to mask the LWE error.
+This transforms decryption into a probabilistic algorithm and ensures the decryption oracle output does not leak exploitable information about the noise.
+For exact schemes where decryption errors occur, parameter choices must be carefully made so that the error probability is negligible, effectively restoring the correctness assumption that makes CPAD collapse to CPA.
+
+## Further Reading
+
+The CPAD notion was introduced by Li and Micciancio (Eurocrypt 2021).
+The paper also left open the question of whether single-challenge and multiple-challenge CPAD are equivalent; Brzuska et al. (ePrint 2024/812) settled this by proving that multiple-challenge CPAD is strictly stronger than single-challenge CPAD in the general (approximate) regime, i.e., $\mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$.
+They further identified intermediate variants $\mathsf{CPAD}_1 \prec \mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$, where $\mathsf{CPAD}_1$ restricts the decryption oracle to close after the challenge (analogous to the CCA1/CCA2 distinction).
+Alexandru, Al Badawi, Micciancio, and Polyakov (ePrint 2024/203) introduced application-aware security, a weaker variant of CPAD relativized to a function class and noise estimation strategy.
+Bernard, Joye, Smart, and Walter (ePrint 2024/1718) introduced Strong CPAD (sCPAD) where the adversary additionally controls the encryption randomness, and showed it is strictly stronger than standard CPAD.

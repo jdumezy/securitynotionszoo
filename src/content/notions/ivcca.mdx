@@ -1,7 +1,7 @@
 ---
 title: "IV Chosen Plaintext Attack"
 acronym: "IV-CCA"
-description: "TBD."
+description: "CCA notion between CCA1 and vCCA using explicit input verification instead of SNARKs; achievable from LWE without non-falsifiable assumptions."
 tags: ["Active"]
 introduced_in:
   - title: ""
@@ -12,4 +12,51 @@ implies: ["CCA1"]
 implied_by: ["vCCA"]
 ---
 
-TBD
+## Overview
+
+Input-Verifiable CCA (IV-CCA) security, introduced by Yang, Yu, and Susilo, is a CCA security notion that sits strictly between CCA1 and vCCA.
+Like vCCA, IV-CCA features a post-challenge decryption oracle that accepts some ciphertexts beyond the CCA1 cutoff.
+However, where vCCA relies on a SNARK-based witness extractor to identify challenge-dependent ciphertexts, IV-CCA uses a *verification algorithm* that is part of the FHE scheme itself: the adversary must supply, alongside the ciphertext to be decrypted, a set of input ciphertexts that "explain" it via a legitimate homomorphic evaluation.
+
+The key distinction from vCCA is that IV-CCA's verification is explicit and non-compact - the input ciphertexts must be presented to the decryption oracle, making the scheme inherently non-compact.
+In exchange, Yang et al. achieved the remarkable result of constructing an IV-CCA-secure FHE scheme in the standard model based solely on the LWE assumption (plus the assumption that perfectly correct FHE can be built from LWE), without requiring SNARKs or any non-falsifiable assumptions.
+
+## Formal Definition
+
+An IV-CCA-secure FHE scheme is augmented with a verification algorithm $\mathsf{Verify}$ that takes a ciphertext $c$ and a tuple of input ciphertexts $(c_1, \ldots, c_K)$ and checks whether $c$ can be explained as a legitimate homomorphic evaluation over those inputs.
+The IV-CCA security game proceeds as follows:
+
+1. The challenger generates $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to $\mathcal{A}$.
+2. **Phase 1 (pre-challenge).** $\mathcal{A}$ has access to a decryption oracle $\mathsf{Dec}(sk, \cdot)$.
+3. $\mathcal{A}$ outputs $(m_0, m_1)$, receives $c^* \leftarrow \mathsf{Enc}(pk, m_b)$.
+4. **Phase 2 (post-challenge).** $\mathcal{A}$ has access to a decryption oracle that, on input $(c, c_1, \ldots, c_K)$:
+   - Checks that $\mathsf{Verify}(c, c_1, \ldots, c_K) = \mathsf{True}$.
+   - Checks that $c^* \notin \{c_1, \ldots, c_K\}$.
+   - If both checks pass, returns $\mathsf{Dec}(sk, c)$; otherwise returns $\bot$.
+5. $\mathcal{A}$ outputs a guess $b'$.
+
+The scheme is IV-CCA-secure if the advantage is negligible for all PPT adversaries.
+
+The crucial difference from vCCA is that the adversary must explicitly provide the input ciphertexts - there is no extractor that recovers them automatically.
+This makes the notion weaker than vCCA (since a vCCA adversary can submit any ciphertext without supplying inputs, and the extractor does the work), but strictly stronger than CCA1 (since the post-challenge oracle is not completely shut off).
+
+## Attacks & Relevance
+
+IV-CCA prevents the same class of malleability attacks as vCCA: an adversary cannot submit homomorphic transformations of the challenge ciphertext for decryption, because the verification step would require presenting $c^*$ as an input, which is explicitly blocked.
+However, IV-CCA provides this protection through a different mechanism - explicit input verification rather than proof-based extraction - which has fundamental implications for achievability.
+
+The non-compactness of the verification (requiring input ciphertexts to be presented) is a deliberate trade-off.
+It avoids the need for SNARKs entirely, which is what allows the construction to be based on standard assumptions in the standard model.
+This makes IV-CCA particularly relevant as a theoretical benchmark: it demonstrates that meaningful beyond-CCA1 security is achievable for FHE without non-falsifiable assumptions, even if the resulting schemes are not compact.
+
+## Achieving This Notion
+
+Yang, Yu, and Susilo (CRYPTO 2025) gave an explicit construction based on the Naor-Yung paradigm instantiated with LWE-based encryption.
+Their construction requires the underlying FHE scheme to satisfy *perfect* correctness - a strong requirement that they propose to achieve by using truncated discrete Gaussians for the noise distribution to obtain exact $L_\infty$ norm bounds.
+The construction is proven secure in the standard model under the sole LWE assumption, making it the first FHE scheme achieving beyond-CCA1 security without relying on random oracles or non-falsifiable assumptions such as Knowledge-of-Exponent or Linear-Only Homomorphism.
+
+## Further Reading
+
+The IV-CCA notion was introduced by Yang, Yu, and Susilo (CRYPTO 2025).
+For the relationship with other CCA notions, Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036) place IV-CCA in the hierarchy as CCA1 $\prec$ IV-CCA $\prec$ vCCA.
+The requirement of perfect correctness connects to the work of Dwork, Naor, and Reingold (EUROCRYPT 2004) on immunizing encryption schemes from decryption errors, which underpins the Naor-Yung approach used in the construction.
