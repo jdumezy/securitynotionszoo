@@ -12,10 +12,40 @@ implies: []
 implied_by: ["CPAD", "funcCPA"]
 ---
 
-CPA represents the standard baseline for passive security in encryption schemes.
-All FHE schemes usable in practice (BFV, BGV, CKKS, and TFHE) natively achieve CPA security.
+## Overview
 
-**The CPA Game:**
-In the CPA game, the adversary has access to an encryption oracle (which is strictly necessary only in the private-key setting, as public-key adversaries can encrypt on their own) and a challenge oracle.
-*   The challenge oracle can only be invoked once with two distinct messages ($m_0, m_1$), returning an encryption of $m_b$ based on a secret bit $b$ chosen by the challenger.
-*   When evaluating homomorphic schemes under the CPA game, the adversary performs homomorphic evaluations entirely on their own. The adversary wins if they can guess the secret bit $b$.
+Chosen Plaintext Attack (CPA) security is the baseline security notion for encryption schemes. It captures the requirement that an adversary who can choose plaintexts and observe their encryptions should not be able to distinguish which of two chosen messages was encrypted in a challenge ciphertext.
+
+CPA was introduced as a formalization of semantic security, and the two notions are equivalent for public-key encryption. The motivation is straightforward: since a public-key adversary can always encrypt messages of their choice, the scheme must remain secure even under this capability. In the context of FHE, CPA security is the default assumption for most constructions, as homomorphic evaluation does not inherently require stronger guarantees.
+
+## Formal Definition
+
+The IND-CPA security game proceeds as follows:
+
+1. The challenger generates a key pair $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to the adversary $\mathcal{A}$.
+2. $\mathcal{A}$ may encrypt any message of its choice using $pk$.
+3. $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$.
+4. The challenger samples a bit $b \xleftarrow{\char36} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
+5. $\mathcal{A}$ outputs a guess $b'$.
+
+The advantage is defined as:
+
+$$\mathsf{Adv}^{\mathsf{IND\text{-}CPA}}_{\Pi, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|$$
+
+The scheme is IND-CPA secure if this advantage is negligible for all PPT adversaries.
+
+## Attacks & Relevance
+
+CPA security prevents any passive eavesdropper from extracting information about the plaintext from the ciphertext. It rules out deterministic encryption and any scheme where the ciphertext leaks partial information about the message.
+
+In the context of FHE, CPA security is typically sufficient for honest-but-curious settings where all parties follow the protocol. Most lattice-based FHE schemes (BGV, BFV, CKKS, TFHE) are proven secure under IND-CPA, relying on the hardness of (Ring-)LWE or related problems.
+
+However, CPA alone does not protect against active adversaries who may tamper with ciphertexts. Since homomorphic evaluation inherently modifies ciphertexts, CPA security says nothing about the integrity or correctness of computed results.
+
+## Achieving This Notion
+
+CPA security is achieved by essentially all modern public-key encryption schemes. For FHE specifically, the standard constructions based on LWE, Ring-LWE, or NTRU assumptions all satisfy IND-CPA. The noise flooding technique is sometimes required to ensure CPA security of the *output* ciphertexts in some schemes (e.g., ensuring circuit privacy in addition to message privacy).
+
+## Further Reading
+
+The equivalence between semantic security and indistinguishability was established by Goldwasser and Micali (1984). For a textbook treatment of CPA and its place in the hierarchy of security notions, see Katz and Lindell, *Introduction to Modern Cryptography*. In the FHE setting, Gentry's original thesis (2009) established CPA as the baseline security target, a convention that has persisted throughout subsequent generations of FHE schemes.
