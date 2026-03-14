@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://securitynotionszoo.com/sitemap-index.xml

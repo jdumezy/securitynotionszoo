@@ -7,16 +7,14 @@ interface Props {
 
 const { notions } = Astro.props;
 
-// Generate Mermaid syntax dynamically
 let mermaidGraph = 'graph TD;\n';
 
 notions.forEach(notion => {
   const acronym = notion.data.acronym;
-  // Node definition (click to go to page)
   mermaidGraph += `  ${acronym}["${acronym}"]\n`;
   mermaidGraph += `  click ${acronym} "/notions/${notion.slug}" "Go to ${acronym}"\n`;
-  
-  // Implies relationships (A --> B)
+
+  // A --> B means A implies B (A is a strictly stronger notion)
   if (notion.data.implies && notion.data.implies.length > 0) {
     notion.data.implies.forEach(target => {
       mermaidGraph += `  ${acronym} --> ${target}\n`;
@@ -70,7 +68,7 @@ notions.forEach(notion => {
     for (const container of containers) {
       const code = container.getAttribute('data-mermaid');
       if (code) {
-        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+        const id = 'mermaid-' + Math.random().toString(36).slice(2, 11);
         try {
           const { svg } = await mermaid.render(id, code);
           container.innerHTML = svg;
@@ -81,14 +79,12 @@ notions.forEach(notion => {
     }
   };
 
-  // Render initially: module scripts are deferred, so DOM is likely ready.
-  // We use readyState to handle both normal loads and HMR/race conditions.
+  // readyState guard handles race conditions on HMR
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', renderGraphs);
   } else {
     renderGraphs();
   }
-  
-  // Re-render when theme changes
+
   document.addEventListener('theme-changed', renderGraphs);
 </script>

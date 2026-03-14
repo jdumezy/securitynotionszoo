@@ -95,7 +95,6 @@ const renderedNotions = await Promise.all(
       
       if (!content || !btn || !overlay) return;
 
-      // Define click handler
       const toggleContent = () => {
         if (content.classList.contains('max-h-48')) {
           content.classList.remove('max-h-48');
@@ -108,8 +107,6 @@ const renderedNotions = await Promise.all(
         }
       };
 
-      // Clean up past event listeners by removing and re-adding, just in case
-      btn.removeEventListener('click', toggleContent);
       btn.addEventListener('click', toggleContent);
 
       setTimeout(() => {
@@ -123,5 +120,6 @@ const renderedNotions = await Promise.all(
     });
   };
 
+  // setTimeout inside ensures scrollHeight is measured after layout
   document.addEventListener('DOMContentLoaded', initializeExpanders);
 </script>

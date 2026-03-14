@@ -115,13 +115,11 @@ const allTags = Array.from(new Set(allNotions.flatMap((notion) => notion.data.ta
 
       buttons.forEach((btn) => {
         btn.addEventListener('click', () => {
-          // Reset all buttons to inactive state
           buttons.forEach((b) => {
             b.classList.remove('active', 'bg-sky-600', 'text-white', 'dark:bg-accent', 'hover:opacity-90');
             b.classList.add('bg-slate-200', 'text-slate-700', 'dark:bg-slate-800', 'dark:text-slate-300', 'hover:bg-slate-300', 'dark:hover:bg-slate-700');
           });
-          
-          // Set clicked button to active state
+
           btn.classList.remove('bg-slate-200', 'text-slate-700', 'dark:bg-slate-800', 'dark:text-slate-300', 'hover:bg-slate-300', 'dark:hover:bg-slate-700');
           btn.classList.add('active', 'bg-sky-600', 'text-white', 'dark:bg-accent', 'hover:opacity-90');
 
@@ -145,9 +143,7 @@ const allTags = Array.from(new Set(allNotions.flatMap((notion) => notion.data.ta
       });
     }
 
-    // Initialize on load
     document.addEventListener('DOMContentLoaded', setupFilters);
-    // Support for ViewTransitions if used
-    document.addEventListener('astro:page-load', setupFilters);
+    document.addEventListener('astro:page-load', setupFilters); // re-run after view transitions
   </script>
 </BaseLayout>
