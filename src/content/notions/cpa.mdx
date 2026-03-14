@@ -25,12 +25,14 @@ The IND-CPA security game proceeds as follows:
 1. The challenger generates a key pair $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to the adversary $\mathcal{A}$.
 2. $\mathcal{A}$ may encrypt any message of its choice using $pk$.
 3. $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$.
-4. The challenger samples a bit $b \xleftarrow{R} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
+4. The challenger samples a bit $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
 5. $\mathcal{A}$ outputs a guess $b'$.
 
 The advantage is defined as:
 
-$$\mathsf{Adv}^{\mathsf{IND\text{-}CPA}}_{\Pi, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|$$
+$$
+\mathsf{Adv}^{\mathsf{IND\text{-}CPA}}_{\Pi, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|
+$$
 
 The scheme is IND-CPA secure if this advantage is negligible for all PPT adversaries.
 
