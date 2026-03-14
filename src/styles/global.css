@@ -21,7 +21,8 @@
   }
 
   /* Fix Tailwind Typography making inline MathJax SVGs block elements */
-  .prose mjx-container svg {
+  /* Scope to inline math only; display math (display="true") must remain block */
+  .prose mjx-container:not([display="true"]) svg {
     display: inline;
   }
 }
