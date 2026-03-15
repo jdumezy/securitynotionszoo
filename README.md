@@ -1,5 +1,7 @@
 # Security Notions Zoo
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/b770d3e9-090e-4e9a-a149-5a8215657623/deploy-status)](https://app.netlify.com/projects/securitynotionszoo/deploys)
+
 A taxonomy site for cryptography security notions, specifically focusing on Fully Homomorphic Encryption (FHE).
 
 This project is built using [Astro](https://astro.build/), [Tailwind CSS](https://tailwindcss.com/), [MDX](https://mdxjs.com/), and [Mermaid.js](https://mermaid.js.org/).
