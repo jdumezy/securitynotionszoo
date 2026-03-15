@@ -1,15 +1,75 @@
 ---
-title: "Strong CPAD"
+title: "Strong Chosen Plaintext Attack with Decryption"
 acronym: "sCPAD"
-description: "Strengthens CPAD by additionally giving the adversary control over encryption randomness; required for achieving public-key vCCAD security."
+description: "Passive security notion strengthening CPAD by granting the adversary control over encryption randomness for non-challenge ciphertexts."
 tags: ["Passive"]
 introduced_in:
-  - title: ""
-    authors: []
-    year: 
-    link: ""
+  - title: "Drifting Towards Better Error Probabilities in Fully Homomorphic Encryption Schemes"
+    authors: ["Olivier Bernard", "Marc Joye", "Nigel P. Smart", "Michael Walter"]
+    year: 2025
+    link: "https://eprint.iacr.org/2024/1718"
 implies: ["CPAD"]
 implied_by: ["vCCAD"]
 ---
 
-TBD
+## Overview
+
+Strong Chosen Plaintext Attack with Decryption (sCPAD) security is a strengthening of CPAD security introduced to address a mismatch between the CPAD security model and practical public-key FHE deployments.
+In the CPAD game, fresh ciphertexts in the adversary's state can only be produced by the encryption oracle, which samples its own randomness internally.
+However, in real-world public-key settings, an adversary possesses the public key and can encrypt messages using randomness of its choosing — it may only be required to prove that the resulting ciphertext is well-formed, not that the randomness was sampled honestly.
+The sCPAD game closes this gap by giving the adversary an additional encryption oracle that accepts adversarially chosen randomness.
+
+The key insight is that even though a public-key adversary can always compute encryptions on its own, the ability to inject ciphertexts with chosen randomness into the game state — and then request their decryption after homomorphic operations — can leak information that the standard CPAD model does not capture.
+Bernard, Joye, Smart, and Walter proved that sCPAD is strictly stronger than CPAD: there exist schemes that are CPAD-secure but completely sCPAD-insecure, even in the public-key setting.
+
+## Formal Definition
+
+The sCPAD security game extends the CPAD game by adding a second encryption oracle that takes adversarially chosen randomness.
+Given a public-key FHE scheme $\mathcal{E}_H = (\mathsf{Gen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$ with message space $\mathcal{M}$ and encryption randomness space $\mathcal{R}$, the game is parameterized by a hidden bit $b \xleftarrow{\textdollar} \{0,1\}$ and maintains an initially empty state $S$:
+
+1. **Key generation.** Run $(pk, ek, sk) \leftarrow \mathsf{Gen}(1^\lambda)$ and give $(pk, ek)$ to $\mathcal{A}$.
+2. **Challenge encryption request.** On query $(\texttt{test}, m_0, m_1)$ with $m_0 \neq m_1$, compute $c \leftarrow \mathsf{Enc}_{pk}(m_b)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m_0, m_1, c)]$.
+3. **Randomness-controlled encryption request.** On query $(\textsf{Enc}', m, r)$ with $m \in \mathcal{M}$ and $r \in \mathcal{R}$, compute $c \leftarrow \mathsf{Enc}_{pk}(m; r)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m, m, c)]$.
+4. **Evaluation request.** On query $(\texttt{eval}, f, l_1, \ldots, l_K)$ with indices into $S$, compute $m'_0 = f(S[l_1].m_0, \ldots, S[l_K].m_0)$, $m'_1 = f(S[l_1].m_1, \ldots, S[l_K].m_1)$, and $c' \leftarrow \mathsf{Eval}_{ek}(f, S[l_1].c, \ldots, S[l_K].c)$. Return $c'$ to $\mathcal{A}$ and set $S := [S; (m'_0, m'_1, c')]$.
+5. **Decryption request.** On query $(\texttt{ciphertext}, l)$ with $l$ an index into $S$: if $S[l].m_0 \neq S[l].m_1$, return $\bot$. Otherwise return $\mathsf{Dec}_{sk}(S[l].c)$.
+6. **Guessing stage.** $\mathcal{A}$ outputs a guess $b'$. It wins if $b' = b$.
+
+The scheme is sCPAD-secure if the advantage $\mathsf{Adv}^{\mathsf{sCPAD}}_{\Pi, \mathcal{A}}(\lambda) = |\Pr[b' = b] - 1/2|$ is negligible for all PPT adversaries.
+
+Note that the randomness-controlled oracle $\mathsf{Enc}'$ can only be used for non-challenge queries (both plaintext components are identical), since allowing the adversary to choose randomness for left-or-right challenge queries would make the notion trivially unachievable.
+
+## Separation from CPAD
+
+The implication sCPAD $\Rightarrow$ CPAD is immediate, since the CPAD adversary's oracles are a strict subset of those available in the sCPAD game.
+The reverse does not hold.
+
+For **symmetric-key** schemes, the separation is straightforward: in Regev-type encryption, choosing the encryption randomness means the adversary knows the noise term and can remove it, yielding a linear equation in the secret key that is recoverable after $n$ queries.
+
+For **public-key** schemes, one might expect the two notions to coincide since the adversary already holds the public key and can encrypt on its own.
+Bernard et al. showed this intuition is false by constructing an explicit counterexample.
+Starting from any CPAD-secure public-key FHE scheme over $\mathbb{Z}_2$, they modify encryption to accept an additional randomness string $r'$ of length $\lambda$: if $r' = 0^\lambda$, the scheme encrypts the complement of the message; otherwise it behaves normally.
+The modified scheme remains CPAD-secure because the probability of any ciphertext in the game state having $r' = 0^\lambda$ is negligible when randomness is sampled honestly.
+However, an sCPAD adversary can deliberately set $r' = 0^\lambda$, causing the oracle to insert a ciphertext that decrypts to the complement of the submitted message, which breaks the scheme via a standard distinguishing attack.
+
+## Achieving This Notion
+
+Bernard et al. introduced a new correctness definition called **ACER correctness** (statistical correctness under Adversarially Chosen Encryption Randomness) tailored to the sCPAD setting.
+A scheme is ACER correct if fresh ciphertexts decrypt perfectly for all choices of randomness, and the failure probability after homomorphic evaluation is negligible even when input ciphertexts were produced with adversarially chosen randomness.
+
+The central result is that IND-CPA security combined with ACER correctness implies sCPAD security.
+In contrast, IND-CPA security combined with ordinary statistical correctness suffices for CPAD but does not imply sCPAD.
+
+Achieving ACER correctness is non-trivial.
+A naive approach of hashing the input randomness through a random oracle to force uniform encryption randomness does not work, because an adversary can use rejection sampling to bias the noise (e.g., selecting ciphertexts whose noise terms all share the same sign, amplifying the failure probability after addition).
+
+The paper gives a sufficient condition: if a statistically correct scheme has **re-randomizable ciphertexts** and fresh ciphertexts are perfectly correct, then re-randomizing each input ciphertext before evaluation yields ACER correctness.
+Concretely, the evaluation algorithm is modified to $\mathsf{Eval}'_{ek}(g, c_1, \ldots, c_\ell) = \mathsf{Eval}_{ek}(g, \mathsf{re\text{-}rand}(c_1), \ldots, \mathsf{re\text{-}rand}(c_\ell))$, where $\mathsf{re\text{-}rand}$ produces a distribution statistically close to a fresh encryption.
+Combining this with an IND-CPAD-secure scheme immediately yields sCPAD security.
+
+For **TFHE** specifically, re-randomization can be performed by adding an encryption of zero (using the public key), and the paper shows that their new modulus-switching techniques — the probabilistic and exact drift defenses — enable TFHE parameter sets originally designed for IND-CPA security to achieve sCPAD security with negligible overhead.
+
+## Further Reading
+
+The sCPAD notion was introduced by [Bernard, Joye, Smart, and Walter (Eurocrypt 2025)](https://eprint.iacr.org/2024/1718.pdf).
+The idea of supplying randomness to the encryption oracle appeared earlier in a proof technique by [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf), but the notion was not formally defined and its relationship to CPAD was not clarified.
+For the broader landscape of CPAD variants, [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf) established a hierarchy of single-challenge and multiple-challenge CPAD notions, and [Alexandru, Al Badawi, Micciancio, and Polyakov (CIC 2026)](https://eprint.iacr.org/2024/203.pdf) introduced application-aware security as a weaker alternative relativized to specific function classes.
