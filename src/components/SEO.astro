@@ -17,13 +17,36 @@ const {
 // Determine canonical URL from Astro.url or props
 const canonicalURL = Astro.props.canonicalURL || new URL(Astro.url.pathname, Astro.site || Astro.url);
 const resolvedImageWithDomain = new URL(image, Astro.site || Astro.url).toString();
+
+const jsonLd = type === 'article' ? {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": title,
+  "description": description,
+  "image": resolvedImageWithDomain,
+  "url": canonicalURL.toString(),
+  "author": {
+    "@type": "Organization",
+    "name": "SecurityNotionsZoo"
+  }
+} : {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "SecurityNotionsZoo",
+  "alternateName": "Cryptography Security Notions Taxonomy",
+  "url": Astro.site?.toString() || canonicalURL.origin,
+  "description": description
+};
 ---
 
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" href="/icon.png" />
+<link rel="apple-touch-icon" href="/icon.png" />
 <meta name="generator" content={Astro.generator} />
+<meta name="theme-color" content="#0ea5e9" />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
@@ -47,3 +70,6 @@ const resolvedImageWithDomain = new URL(image, Astro.site || Astro.url).toString
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={resolvedImageWithDomain} />
+
+<!-- Structured Data -->
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
