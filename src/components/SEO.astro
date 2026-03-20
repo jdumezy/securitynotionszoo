@@ -5,6 +5,7 @@ interface Props {
   canonicalURL?: string | URL;
   type?: string;
   image?: string;
+  keywords?: string[];
 }
 
 const {
@@ -12,26 +13,54 @@ const {
   description,
   type = 'website',
   image = '/icon.png',
+  keywords,
 } = Astro.props;
 
 // Determine canonical URL from Astro.url or props
 const canonicalURL = Astro.props.canonicalURL || new URL(Astro.url.pathname, Astro.site || Astro.url);
 const resolvedImageWithDomain = new URL(image, Astro.site || Astro.url).toString();
+
+// Strip " | SecurityNotionsZoo" suffix for use as JSON-LD headline
+const headline = title.replace(' | SecurityNotionsZoo', '');
+
+const jsonLd = type === 'article' ? {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": headline,
+  "description": description,
+  "image": resolvedImageWithDomain,
+  "url": canonicalURL.toString(),
+  "keywords": keywords?.join(', '),
+  "author": {
+    "@type": "Organization",
+    "name": "SecurityNotionsZoo"
+  }
+} : {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "SecurityNotionsZoo",
+  "alternateName": "Cryptography Security Notions Taxonomy",
+  "url": Astro.site?.toString() || canonicalURL.origin,
+  "description": description
+};
 ---
 
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" href="/icon.png" />
+<link rel="apple-touch-icon" href="/icon.png" />
 <meta name="generator" content={Astro.generator} />
+<meta name="theme-color" content="#0ea5e9" />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
 
 <!-- Primary Meta Tags -->
 <title>{title}</title>
-<meta name="title" content={title} />
 <meta name="description" content={description} />
+{keywords && keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content={type} />
@@ -47,3 +76,6 @@ const resolvedImageWithDomain = new URL(image, Astro.site || Astro.url).toString
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={resolvedImageWithDomain} />
+
+<!-- Structured Data -->
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
