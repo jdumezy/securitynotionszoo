@@ -1,0 +1,60 @@
+---
+title: "Replayable Chosen Ciphertext Attack"
+acronym: "RCCA"
+description: "Adaptive chosen ciphertext attack where the adversary has access to a decryption oracle both before and after the challenge ciphertext is published."
+tags: ["Active", "Adaptive", "Non-malleable"]
+introduced_in:
+  - title: "Relaxing Chosen-Ciphertext Security"
+    authors: ["Ran Canetti", "Hugo Krawczyk", "Jesper B. Nielsen"]
+    year: 2003
+    link: "https://link.springer.com/chapter/10.1007/978-3-540-45146-4_33"
+implies: ["vCCAD"]
+implied_by: ["CCA2"]
+---
+
+## Overview
+
+Replayable Chosen Ciphertext Attack (RCCA) security, also known as IND-RCCA, is a strict relaxation of the CCA2 game. Intuitively, while the CCA2 decryption oracle refuses only the challenge ciphertext, the RCCA decryption oracle refuses all ciphertexts that decrypt to one of the plaintext values submitted in the challenge request. In particular, this decryption oracle refuses to decrypt all rerandomizations of the challenge ciphertext in the context of correct schemes.
+
+In the FHE context, RCCA is incompatible with homomorphic evaluation. Indeed, given a challenge ciphertext $c^*$ encrypting $m_b$, an adversary can homomorphically compute, say, $c' \leftarrow \mathsf{Eval}(f, c^*)$ for a known function $f$ satisfying $f(m_0),f(m_1)\not\in\{m_0,m_1\}$, then query the decryption oracle on $c'$ to recover $f(m_b)$, which trivially distinguishes $m_0$ from $m_1$ if $f(m_0) \neq f(m_1)$.
+
+## Formal Definition
+
+The IND-RCCA security game proceeds as follows:
+
+1. The challenger generates a key pair $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to $\mathcal{A}$.
+2. **Phase 1 (pre-challenge):** $\mathcal{A}$ has access to a decryption oracle $\mathsf{Dec}(sk, \cdot)$ and may submit arbitrary ciphertexts for decryption.
+3. $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$.
+4. The challenger samples $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
+5. **Phase 2 (post-challenge):** $\mathcal{A}$ **retains** access to the decryption oracle, but when called on ciphertext $c$, it refuses to answer the request if $\mathsf{Dec}(sk, c)\in\{m_0,m_1\}$.
+6. $\mathcal{A}$ outputs a guess $b'$.
+
+The advantage is defined as:
+
+$$
+\mathsf{Adv}^{\mathsf{IND\text{-}RCCA}}_{\Pi, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|
+$$
+
+The scheme is IND-RCCA secure if this advantage is negligible for all PPT adversaries.
+
+## Attacks & Relevance
+
+{/* CCA2 security prevents an adversary from exploiting the malleability of ciphertexts.
+Classic attacks thwarted by CCA2 include [Bleichenbacher's attack on RSA PKCS#1 v1.5](https://link.springer.com/chapter/10.1007/BFb0055716), where an adversary multiplies a target ciphertext by known values and uses a decryption oracle (via error messages) to gradually recover the plaintext, as well as padding oracle attacks more generally.
+For standard (non-homomorphic) encryption, CCA2 is the expected security level in practice.
+It is required for secure key transport, hybrid encryption, and any setting where ciphertexts travel over channels controlled by an adversary.
+
+For FHE, as noted above, CCA2 is fundamentally at odds with the homomorphic property.
+The ability to meaningfully transform ciphertexts is exactly what CCA2 is designed to prevent.
+This has led to a research directions: relaxed CCA-type notions that accommodate homomorphic evaluation (such as CCA1, funcCPA, CPAD, or vCCA). */}
+
+## Achieving This Notion
+
+{/* For standard public-key encryption, CCA2 security is achieved through several well-known paradigms: the [Cramer–Shoup scheme](https://link.springer.com/chapter/10.1007/BFb0055717) (the first practical CCA2-secure scheme without random oracles), the [Fujisaki–Okamoto transform](https://link.springer.com/chapter/10.1007/3-540-48405-1_34) (in the random oracle model, widely used in post-quantum KEMs such as those in the NIST standards), and OAEP for RSA-based encryption. In the lattice setting, CCA2-secure (non-homomorphic) encryption can be built from LWE using standard transformations.
+
+For FHE, achieving full CCA2 security while retaining homomorphic functionality is generally impossible, as it is fundammentally incompatible with malleability. */}
+
+## Further Reading
+
+{/* The formal definition of CCA2 was given by [Rackoff and Simon (1991)](https://link.springer.com/chapter/10.1007/3-540-46766-1_35), building on the CCA1 notion of [Naor and Yung (1990)](https://www.wisdom.weizmann.ac.il/~naor/PAPERS/cca.pdf).
+The [Cramer–Shoup cryptosystem (1998)](https://link.springer.com/chapter/10.1007/BFb0055717) was the first efficient construction achieving CCA2 without random oracles. */}
