@@ -5,6 +5,7 @@ interface Props {
   canonicalURL?: string | URL;
   type?: string;
   image?: string;
+  keywords?: string[];
 }
 
 const {
@@ -12,19 +13,24 @@ const {
   description,
   type = 'website',
   image = '/icon.png',
+  keywords,
 } = Astro.props;
 
 // Determine canonical URL from Astro.url or props
 const canonicalURL = Astro.props.canonicalURL || new URL(Astro.url.pathname, Astro.site || Astro.url);
 const resolvedImageWithDomain = new URL(image, Astro.site || Astro.url).toString();
 
+// Strip " | SecurityNotionsZoo" suffix for use as JSON-LD headline
+const headline = title.replace(' | SecurityNotionsZoo', '');
+
 const jsonLd = type === 'article' ? {
   "@context": "https://schema.org",
   "@type": "Article",
-  "headline": title,
+  "headline": headline,
   "description": description,
   "image": resolvedImageWithDomain,
   "url": canonicalURL.toString(),
+  "keywords": keywords?.join(', '),
   "author": {
     "@type": "Organization",
     "name": "SecurityNotionsZoo"
@@ -53,8 +59,8 @@ const jsonLd = type === 'article' ? {
 
 <!-- Primary Meta Tags -->
 <title>{title}</title>
-<meta name="title" content={title} />
 <meta name="description" content={description} />
+{keywords && keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content={type} />

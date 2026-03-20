@@ -9,6 +9,7 @@ interface Props {
   description?: string;
   image?: string;
   type?: string;
+  keywords?: string[];
 }
 
 const {
@@ -16,13 +17,14 @@ const {
   description = "A taxonomy site for cryptography security notions focused on FHE.",
   image,
   type,
+  keywords,
 } = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <SEO title={title} description={description} image={image} type={type} />
+    <SEO title={title} description={description} image={image} type={type} keywords={keywords} />
     <script is:inline>
       const theme = (() => {
         if (
