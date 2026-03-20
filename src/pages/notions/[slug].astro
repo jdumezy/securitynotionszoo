@@ -14,10 +14,11 @@ const { notion } = Astro.props;
 const { Content } = await notion.render();
 ---
 
-<BaseLayout 
+<BaseLayout
   title={`${notion.data.acronym} - ${notion.data.title} | SecurityNotionsZoo`}
   description={notion.data.description}
   type="article"
+  keywords={[notion.data.acronym, `IND-${notion.data.acronym}`, notion.data.title, ...notion.data.tags, 'FHE', 'Fully Homomorphic Encryption', 'cryptography', 'security notion']}
 >
   <div class="mb-10">
     <a href="/" class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-8 decoration-transparent transition-colors">
