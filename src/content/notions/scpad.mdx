@@ -64,12 +64,12 @@ A naive approach of hashing the input randomness through a random oracle to forc
 
 The paper gives a sufficient condition: if a statistically correct scheme has **re-randomizable ciphertexts** and fresh ciphertexts are perfectly correct, then re-randomizing each input ciphertext before evaluation yields ACER correctness.
 Concretely, the evaluation algorithm is modified to $\mathsf{Eval}'_{ek}(g, c_1, \ldots, c_\ell) = \mathsf{Eval}_{ek}(g, \mathsf{re\text{-}rand}(c_1), \ldots, \mathsf{re\text{-}rand}(c_\ell))$, where $\mathsf{re\text{-}rand}$ produces a distribution statistically close to a fresh encryption.
-Combining this with an IND-CPAD-secure scheme immediately yields sCPAD security.
+Combining this with an IND-CPA-secure scheme immediately yields sCPAD security.
 
 For **TFHE** specifically, re-randomization can be performed by adding an encryption of zero (using the public key), and the paper shows that their new modulus-switching techniques — the probabilistic and exact drift defenses — enable TFHE parameter sets originally designed for IND-CPA security to achieve sCPAD security with negligible overhead.
 
 ## Further Reading
 
-The sCPAD notion was introduced by [Bernard, Joye, Smart, and Walter (Eurocrypt 2025)](https://eprint.iacr.org/2024/1718.pdf).
-The idea of supplying randomness to the encryption oracle appeared earlier in a proof technique by [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf), but the notion was not formally defined and its relationship to CPAD was not clarified.
-For the broader landscape of CPAD variants, [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf) established a hierarchy of single-challenge and multiple-challenge CPAD notions, and [Alexandru, Al Badawi, Micciancio, and Polyakov (CIC 2026)](https://eprint.iacr.org/2024/203.pdf) introduced application-aware security as a weaker alternative relativized to specific function classes.
+The sCPAD notion was introduced by [Bernard, Joye, Smart, and Walter (Eurocrypt 2025)](https://eprint.iacr.org/2024/1718).
+The idea of supplying randomness to the encryption oracle appeared earlier in a proof technique by [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812), but the notion was not formally defined and its relationship to CPAD was not clarified.
+For the broader landscape of CPAD variants, [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) established a hierarchy of single-challenge and multiple-challenge CPAD notions, and [Alexandru, Al Badawi, Micciancio, and Polyakov (CIC 2026)](https://eprint.iacr.org/2024/203) introduced application-aware security as a weaker alternative relativized to specific function classes.

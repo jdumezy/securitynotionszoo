@@ -18,7 +18,7 @@ Chosen Ciphertext Attack 2 (CCA2) security, also known as IND-CCA2 or adaptive c
 It extends CCA1 by allowing the adversary to continue querying the decryption oracle *even after* receiving the challenge ciphertext, with the sole restriction that it may not submit the challenge ciphertext itself for decryption.
 
 CCA2 captures a very powerful adversary model: one who can adaptively craft decryption queries based on the challenge ciphertext, attempting to extract information through related ciphertexts.
-This notion is considered the gold standard for general-purpose public-key encryption, although it is sometimes critized for being too strong.
+This notion is considered the gold standard for general-purpose public-key encryption, although it is sometimes criticized for being too strong.
 
 In the FHE context, CCA2 is incompatible with homomorphic evaluation. Given a challenge ciphertext $c^*$ encrypting $m_b$, an adversary can homomorphically compute, say, $c' \leftarrow \mathsf{Eval}(f, c^*)$ for a known function $f$, then query the decryption oracle on $c'$ to recover $f(m_b)$, which trivially distinguishes $m_0$ from $m_1$ if $f(m_0) \neq f(m_1)$.
 
@@ -48,15 +48,12 @@ Classic attacks thwarted by CCA2 include [Bleichenbacher's attack on RSA PKCS#1 
 For standard (non-homomorphic) encryption, CCA2 is the expected security level in practice.
 It is required for secure key transport, hybrid encryption, and any setting where ciphertexts travel over channels controlled by an adversary.
 
-For FHE, as noted above, CCA2 is fundamentally at odds with the homomorphic property.
-The ability to meaningfully transform ciphertexts is exactly what CCA2 is designed to prevent.
-This has led to a research directions: relaxed CCA-type notions that accommodate homomorphic evaluation (such as CCA1, funcCPA, CPAD, or vCCA).
+For FHE, this fundamental incompatibility has driven research into relaxed CCA-type notions that accommodate homomorphic evaluation (such as CCA1, funcCPA, CPAD, or vCCA).
 
 ## Achieving This Notion
 
 For standard public-key encryption, CCA2 security is achieved through several well-known paradigms: the [Cramer–Shoup scheme](https://link.springer.com/chapter/10.1007/BFb0055717) (the first practical CCA2-secure scheme without random oracles), the [Fujisaki–Okamoto transform](https://link.springer.com/chapter/10.1007/3-540-48405-1_34) (in the random oracle model, widely used in post-quantum KEMs such as those in the NIST standards), and OAEP for RSA-based encryption. In the lattice setting, CCA2-secure (non-homomorphic) encryption can be built from LWE using standard transformations.
 
-For FHE, achieving full CCA2 security while retaining homomorphic functionality is generally impossible, as it is fundammentally incompatible with malleability.
 
 ## Further Reading
 
