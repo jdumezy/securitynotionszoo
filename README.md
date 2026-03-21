@@ -29,8 +29,8 @@ We welcome contributions. If you'd like to add a new security notion to the taxo
 
 If you spot any errors, feel free to open an issue or reach out.
 
-This website is maintained by [Jules Dumezy](https://www.jdumezy.com).
-We thank our contributors:
+This website was created by [Jules Dumezy](https://www.jdumezy.com), who also maintains it.
+We thank our contributors, who helped grow the site by adding notions and improving the content:
 - Marc Renard
 
 ## License
