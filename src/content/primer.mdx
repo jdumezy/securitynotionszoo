@@ -82,6 +82,20 @@ If $q$ is polynomial in $\lambda$ and the single-ciphertext advantage is negligi
 
 Notably, for some FHE-specific notions (CPAD, vCCAD in the approximate setting), the hybrid argument *fails* because the games are not perfectly indistinguishable across hybrids, which is precisely why the multi-challenge variants of those notions are strictly stronger than their single-challenge counterparts.
 
+## Circular Security
+
+Standard security definitions assume the adversary never sees an encryption of the secret key under itself (or under a key that is part of a cycle). Circular security (also called Key-Dependent Message security, KDM security) is the property that a scheme remains secure even when the adversary can obtain encryptions of the secret key, or more generally of functions of the secret key, under the corresponding public key.
+
+Formally, a cycle of length $\ell$ arises when there exist keys $sk_1, \ldots, sk_\ell$ such that $sk_i$ is encrypted under $pk_{i+1}$ (indices modulo $\ell$); the simplest case is a 1-cycle, where $sk$ is encrypted under its own $pk$.
+
+Circular security assumptions are ubiquitous in FHE because several fundamental operations require publishing encryptions of secret key material:
+
+- **Bootstrapping:** the key operation that refreshes a noisy ciphertext. A bootstrapping key is a set of encryptions of the bits of the secret key under the same (or a different) public key. Without circular security, no security proof covers the joint distribution of the bootstrapping key and the ciphertexts it refreshes.
+- **Relinearization:** used after homomorphic multiplication to reduce the ciphertext size back to the original dimension. Relinearization keys are encryptions of products of secret-key coefficients, forming a 1-cycle.
+- **Rotation keys (Galois keys):** used in the CKKS, BGV, and BFV schemes to perform cyclic permutations on plaintext slots. Each rotation key is an encryption of a Galois automorphism applied to the secret key, again under the same public key.
+
+An important subtlety is that circular security is a strictly stronger assumption than standard CPA security: there exist encryption schemes that are provably CPA secure in the standard sense, yet can be completely broken once the adversary is given a single encryption of the secret key under itself. Constructions separating CPA security from circular security were given by [Black, Rogaway, and Shrimpton (2002)](https://eprint.iacr.org/2002/100), and refined in later work. In practice, all mainstream FHE schemes (BFV, BGV, CKKS, TFHE) are believed to be circularly secure based on heuristic arguments, but no unconditional proof exists from standard lattice assumptions alone.
+
 ## Further Reading
 
 The game-playing technique was systematized by [Bellare and Rogaway (2004)](https://eprint.iacr.org/2004/331).
