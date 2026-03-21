@@ -1,0 +1,60 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="About | SecurityNotionsZoo"
+  description="About SecurityNotionsZoo, a taxonomy of cryptographic security notions for Fully Homomorphic Encryption."
+>
+  <div class="mb-10">
+    <a href="/" class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-8 decoration-transparent transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Back to taxonomy
+    </a>
+
+    <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-slate-100 mb-3 tracking-tight transition-colors">
+      About
+    </h1>
+    <p class="text-xl md:text-2xl text-slate-600 dark:text-slate-400 font-medium max-w-3xl leading-snug transition-colors">
+      Why this site exists and who built it
+    </p>
+  </div>
+
+  <div class="prose prose-slate dark:prose-invert prose-a:text-sky-600 dark:prose-a:text-accent hover:prose-a:text-sky-500 dark:hover:prose-a:text-sky-300 max-w-none prose-headings:text-slate-900 dark:prose-headings:text-slate-200 transition-colors text-justify">
+
+    <h2>Motivation</h2>
+    <p>
+      Fully Homomorphic Encryption (FHE) is a rapidly evolving field, and the number of security notions used to analyze FHE schemes has grown with it.
+      Keeping track of what exists, what each notion captures, and how they relate to one another and how to achieve them has become genuinely difficult.
+    </p>
+    <p>
+      SecurityNotionsZoo aims to be a structured, accessible reference that maps this space: a living taxonomy where notions are defined, linked to their source papers, and placed in relation to each other.
+    </p>
+
+    <h2>Aim</h2>
+    <p>
+      The goal of this site is to help researchers and practitioners navigate the security notions relevant to FHE, whether they are choosing a notion for a new construction, understanding a proof in a paper, or simply trying to get oriented in the field.
+      The relation graph on the home page gives a bird's-eye view of the implication structure, while individual notion pages provide definitions, references, and context.
+    </p>
+
+    <h2>Contributors</h2>
+    <p>
+      This website was created by <a href="https://www.jdumezy.com" target="_blank">Jules Dumezy</a>, who also maintains it.
+      We thank our contributors, who helped grow the site by adding notions and improving the content:
+    </p>
+    <ul>
+      <li>Marc Renard</li>
+    </ul>
+
+    <h2>Errors and contributions</h2>
+    <p>
+      Despite our best efforts, this site may contain errors in definitions, relations, or references.
+      If you spot a mistake or would like to add a notion, please
+      <a href="https://github.com/jdumezy/securitynotionszoo/issues" target="_blank">open an issue</a> or
+      <a href="https://github.com/jdumezy/securitynotionszoo/pulls" target="_blank">submit a pull request</a> on GitHub.
+      You can also reach out directly to <a href="https://www.jdumezy.com" target="_blank">Jules Dumezy</a>.
+      Contributions are very welcome.
+    </p>
+
+  </div>
+</BaseLayout>
