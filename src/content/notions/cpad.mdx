@@ -22,7 +22,7 @@ The initial intuition is that CPAD should be equivalent to CPA: since the advers
 However, this reasoning implicitly relies on the correctness of the FHE scheme.
 For approximate schemes such as CKKS, decryption returns values that differ slightly from the exact plaintext, and these small differences leak information about the LWE noise embedded in ciphertexts.
 Li and Micciancio demonstrated that this leakage is sufficient to practically recover the secret key, showing that CPAD security is strictly stronger than CPA security for approximate FHE.
-While initially only targetting CKKS, CPAD attack have been extended to all LWE/RLWE based FHE schemes.
+While initially only targeting CKKS, CPAD attacks have been extended to all LWE/RLWE-based FHE schemes.
 
 ## Formal Definition
 
@@ -44,10 +44,9 @@ For approximate FHE, $\mathsf{Dec}(S[l].c) \neq S[l].m_0$ with overwhelming prob
 
 ## Attacks & Relevance
 
-CPAD security captures a fundamental vulnerability of approximate FHE: the small errors introduced by homomorphic evaluation and decryption can leak secret key material.
-The original attack by Li and Micciancio targeted CKKS, showing that an adversary who can obtain decryptions of legitimately computed ciphertexts can reconstruct the secret key from the noise patterns.
+The original attack by Li and Micciancio targeted CKKS: by obtaining decryptions of legitimately computed ciphertexts, an adversary can reconstruct the secret key from the noise patterns.
 
-More recently, [Checri, Sirdey, Boudguiga, and Bultel (CRYPTO 2024)](https://eprint.iacr.org/2024/116.pdf) as well as [Cheon, Choe, Passelègue, Stehlé, and Suvanto (CCS 2024)](https://eprint.iacr.org/2024/127.pdf) demonstrated that schemes previously believed immune to CPAD attacks - including the "exact" schemes BFV, BGV, and TFHE - are also CPAD-insecure as soon as decryption errors can occur with non-negligible probability.
+More recently, [Checri, Sirdey, Boudguiga, and Bultel (CRYPTO 2024)](https://eprint.iacr.org/2024/116) as well as [Cheon, Choe, Passelègue, Stehlé, and Suvanto (CCS 2024)](https://eprint.iacr.org/2024/127) demonstrated that schemes previously believed immune to CPAD attacks - including the "exact" schemes BFV, BGV, and TFHE - are also CPAD-insecure as soon as decryption errors can occur with non-negligible probability.
 This considerably broadened the scope of CPAD as a relevant security notion beyond the approximate FHE setting.
 
 CPAD security is relevant in any FHE deployment where the adversary can observe decrypted results of homomorphic computations it influences.
@@ -55,14 +54,14 @@ This covers many practical scenarios: a client outsourcing computation to a serv
 
 ## Achieving This Notion
 
-For CKKS, [Li, Micciancio, Schultz, and Sorrell (CRYPTO 2022)](https://eprint.iacr.org/2022/816.pdf) proposed achieving CPAD security by applying noise flooding during decryption - adding sufficiently large random noise to the decrypted value to mask the LWE error.
+For CKKS, [Li, Micciancio, Schultz, and Sorrell (CRYPTO 2022)](https://eprint.iacr.org/2022/816) proposed achieving CPAD security by applying noise flooding during decryption - adding sufficiently large random noise to the decrypted value to mask the LWE error.
 This transforms decryption into a probabilistic algorithm and ensures the decryption oracle output does not leak exploitable information about the noise.
 For exact schemes where decryption errors occur, parameter choices must be carefully made so that the error probability is negligible, effectively restoring the correctness assumption that makes CPAD collapse to CPA.
 
 ## Further Reading
 
 The CPAD notion was introduced by [Li and Micciancio (Eurocrypt 2021)](https://eprint.iacr.org/2020/1533).
-The paper also left open the question of whether single-challenge and multiple-challenge CPAD are equivalent. [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf) settled this by proving that multiple-challenge CPAD is strictly stronger than single-challenge CPAD in the general (approximate) regime, i.e., $\mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$.
+The paper also left open the question of whether single-challenge and multiple-challenge CPAD are equivalent. [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) settled this by proving that multiple-challenge CPAD is strictly stronger than single-challenge CPAD in the general (approximate) regime, i.e., $\mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$.
 They further identified intermediate variants $\mathsf{CPAD}_1 \prec \mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$, where $\mathsf{CPAD}_1$ restricts the decryption oracle to close after the challenge (analogous to the CCA1/CCA2 distinction).
-[Alexandru, Al Badawi, Micciancio, and Polyakov (CIC 2026)](https://eprint.iacr.org/2024/203.pdf) introduced application-aware security, a weaker variant of CPAD relativized to a function class and noise estimation strategy.
-[Bernard, Joye, Smart, and Walter (Eurocrypt 2025)](https://eprint.iacr.org/2024/1718.pdf) introduced Strong CPAD (sCPAD) where the adversary additionally controls the encryption randomness, and showed it is strictly stronger than standard CPAD.
+[Alexandru, Al Badawi, Micciancio, and Polyakov (CIC 2026)](https://eprint.iacr.org/2024/203) introduced application-aware security, a weaker variant of CPAD relativized to a function class and noise estimation strategy.
+[Bernard, Joye, Smart, and Walter (Eurocrypt 2025)](https://eprint.iacr.org/2024/1718) introduced Strong CPAD (sCPAD) where the adversary additionally controls the encryption randomness, and showed it is strictly stronger than standard CPAD.

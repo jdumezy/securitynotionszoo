@@ -38,25 +38,22 @@ The IV-CCA security game proceeds as follows:
 The scheme is IV-CCA-secure if the advantage is negligible for all PPT adversaries.
 
 The crucial difference from vCCA is that the adversary must explicitly provide the input ciphertexts - there is no extractor that recovers them automatically.
-This makes the notion weaker than vCCA (since a vCCA adversary can submit any ciphertext without supplying inputs, and the extractor does the work), but strictly stronger than CCA1 (since the post-challenge oracle is not completely shut off).
 
 ## Attacks & Relevance
 
 IV-CCA prevents the same class of malleability attacks as vCCA: an adversary cannot submit homomorphic transformations of the challenge ciphertext for decryption, because the verification step would require presenting $c^*$ as an input, which is explicitly blocked.
 However, IV-CCA provides this protection through a different mechanism - explicit input verification rather than proof-based extraction - which has fundamental implications for achievability.
 
-The non-compactness of the verification (requiring input ciphertexts to be presented) is a deliberate trade-off.
-It avoids the need for SNARKs entirely, which is what allows the construction to be based on standard assumptions in the standard model.
-This makes IV-CCA particularly relevant as a theoretical benchmark: it demonstrates that meaningful beyond-CCA1 security is achievable for FHE without non-falsifiable assumptions, even if the resulting schemes are not compact.
+This makes IV-CCA particularly relevant as a theoretical benchmark: it demonstrates that meaningful beyond-CCA1 security is achievable for FHE without non-falsifiable assumptions, even at the cost of compactness.
 
 ## Achieving This Notion
 
-Yang, Yu, and Susilo (CRYPTO 2025) gave an explicit construction based on the Naor-Yung paradigm instantiated with LWE-based encryption.
+[Yang, Yu, and Susilo (CRYPTO 2025)](https://link.springer.com/chapter/10.1007/978-3-032-01881-6_12) gave an explicit construction based on the Naor-Yung paradigm instantiated with LWE-based encryption.
 Their construction requires the underlying FHE scheme to satisfy *perfect* correctness - a strong requirement that they propose to achieve by using truncated discrete Gaussians for the noise distribution to obtain exact $L_\infty$ norm bounds.
 The construction is proven secure in the standard model under the sole LWE assumption, making it the first FHE scheme achieving beyond-CCA1 security without relying on random oracles or non-falsifiable assumptions such as Knowledge-of-Exponent or Linear-Only Homomorphism.
 
 ## Further Reading
 
-The IV-CCA notion was introduced by Yang, Yu, and Susilo (CRYPTO 2025).
-For the relationship with other CCA notions, Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036) place IV-CCA in the hierarchy as CCA1 $\prec$ IV-CCA $\prec$ vCCA.
-The requirement of perfect correctness connects to the work of Dwork, Naor, and Reingold (EUROCRYPT 2004) on immunizing encryption schemes from decryption errors, which underpins the Naor-Yung approach used in the construction.
+The IV-CCA notion was introduced by [Yang, Yu, and Susilo (CRYPTO 2025)](https://link.springer.com/chapter/10.1007/978-3-032-01881-6_12).
+For the relationship with other CCA notions, [Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036)](https://eprint.iacr.org/2025/2036) place IV-CCA in the hierarchy as CCA1 $\prec$ IV-CCA $\prec$ vCCA.
+The requirement of perfect correctness connects to the work of [Dwork, Naor, and Reingold (EUROCRYPT 2004)](https://link.springer.com/chapter/10.1007/978-3-540-24676-3_21) on immunizing encryption schemes from decryption errors, which underpins the Naor-Yung approach used in the construction.

@@ -46,9 +46,7 @@ The scheme is IND-CCA1 secure if this advantage is negligible for all PPT advers
 CCA1 security protects against adversaries who can temporarily exploit decryption capabilities to learn structural information about the scheme before attempting to break a target ciphertext.
 This covers scenarios such as an attacker with temporary access to a decryption key or device, an insider who loses access privileges before the sensitive message is transmitted, or an adversary who can exploit decryption-related side channels during a setup phase.
 
-In the FHE context, CCA1 is particularly relevant because it is the strongest indistinguishability-based notion that does not inherently conflict with homomorphic evaluation.
-After the challenge phase, the adversary cannot query decryption, so the fact that homomorphic operations produce related ciphertexts does not trivially break the game.
-This makes CCA1 a natural security target for FHE schemes deployed in settings where the adversary may have had prior access to decryption capabilities.
+In the FHE context, CCA1 is a natural security target for schemes deployed in settings where the adversary may have had prior access to decryption capabilities, as it is the strongest indistinguishability-based notion compatible with homomorphic evaluation.
 
 ## Achieving This Notion
 

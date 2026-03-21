@@ -44,7 +44,6 @@ The scheme is IND-CPA secure if this advantage is negligible for all PPT adversa
 CPA security prevents any passive eavesdropper from extracting information about the plaintext from the ciphertext.
 It rules out deterministic encryption and any scheme where the ciphertext leaks partial information about the message.
 
-In the context of FHE, CPA security is typically sufficient for honest-but-curious settings where all parties follow the protocol.
 Most lattice-based FHE schemes (BGV, BFV, CKKS, TFHE) are proven secure under IND-CPA, relying on the hardness of (Ring-)LWE or related problems.
 
 However, CPA alone does not protect against active adversaries who may tamper with ciphertexts.

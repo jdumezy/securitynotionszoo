@@ -36,17 +36,15 @@ Given a public-key encryption scheme $\mathcal{E} = (\mathsf{KeyGen}, \mathsf{En
 6. $\mathcal{A}$ outputs a guess $b'$.
 
 The scheme is funcCPA-secure if the advantage $|\Pr[b' = b] - 1/2|$ is negligible for all PPT adversaries.
-A multi-input variant, funcCPA$^+$, where the oracle accepts multiple ciphertexts and a multi-variate function, has been shown equivalent to the baseline notion by Shinozaki, Tanaka, Tezuka, and Yoshida (ePrint 2024/1166).
+A multi-input variant, funcCPA$^+$, where the oracle accepts multiple ciphertexts and a multi-variate function, has been shown equivalent to the baseline notion by [Shinozaki, Tanaka, Tezuka, and Yoshida (ePrint 2024/1166)](https://eprint.iacr.org/2024/1166).
 
 ## Attacks & Relevance
 
-FuncCPA security is relevant in any deployment where the adversary can interact with an entity that performs decrypt-then-re-encrypt operations.
-The canonical scenario is an FHE server that outsources bootstrapping to the client or to a secure enclave holding the secret key. Even though the enclave only sees masked values (not raw plaintexts), the funcCPA model captures the adversary's ability to adaptively choose which ciphertexts get refreshed and through which functions.
+The canonical deployment scenario is an FHE server that outsources bootstrapping to the client or to a secure enclave. Even though the enclave only sees masked values, the funcCPA model captures the adversary's ability to adaptively choose which ciphertexts get refreshed and through which functions.
 
-The strict separation from CPA means that some CPA-secure schemes become insecure when the adversary gains re-encryption access.
-Conversely, the fact that CCA1 implies funcCPA (proven as part of Manulis and Nguyen's Theorem 4 in their Eurocrypt 2024 paper) means that any CCA1-secure scheme is automatically safe in this setting.
+Some CPA-secure schemes become insecure when the adversary gains re-encryption access, while any CCA1-secure scheme is automatically safe in this setting (Theorem 4 in [Manulis and Nguyen, Eurocrypt 2024](https://eprint.iacr.org/2024/202)).
 
-Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036) further showed that funcCPA-style extensions of CCA1 and vCCA (denoted CCA1R, CCA1M, vCCAR, vCCAM) all collapse back to their base notions.
+[Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036)](https://eprint.iacr.org/2025/2036) further showed that funcCPA-style extensions of CCA1 and vCCA (denoted CCA1R, CCA1M, vCCAR, vCCAM) all collapse back to their base notions.
 This means that the gap between CPA and funcCPA does not propagate to stronger notions: once a scheme is CCA1 or vCCA secure, adding recryption or multiplication oracles does not weaken it.
 
 ## Achieving This Notion
@@ -58,7 +56,7 @@ The "two-ciphertexts" construction $P^{(2)}$ based on Paillier, which achieves v
 
 ## Further Reading
 
-The funcCPA notion was introduced by Akavia, Gentry, Halevi, and Vald (TCC 2022; Journal of Cryptology 2025).
-The equivalence between funcCPA and funcCPA$^+$ was established by Shinozaki, Tanaka, Tezuka, and Yoshida (ePrint 2024/1166).
-Dodis, Halevi, and Wichs (TCC 2023) further studied the setting where delegation targets a local client proxy.
-For the collapse of funcCPA-style CCA variants onto their base notions, see Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036).
+The funcCPA notion was introduced by [Akavia, Gentry, Halevi, and Vald (TCC 2022; Journal of Cryptology 2025)](https://eprint.iacr.org/2022/282).
+The equivalence between funcCPA and funcCPA$^+$ was established by [Shinozaki, Tanaka, Tezuka, and Yoshida (ePrint 2024/1166)](https://eprint.iacr.org/2024/1166).
+[Dodis, Halevi, and Wichs (TCC 2023)](https://eprint.iacr.org/2023/1443) further studied the setting where delegation targets a local client proxy.
+For the collapse of funcCPA-style CCA variants onto their base notions, see [Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036)](https://eprint.iacr.org/2025/2036).
