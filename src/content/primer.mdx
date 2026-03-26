@@ -71,31 +71,45 @@ Each hop is justified either by arguing the games are perfectly indistinguishabl
 
 ## Hybrid Arguments
 
-A **hybrid argument** is a special case of game hopping used to handle multiple independent instances of the same operation (e.g., many ciphertexts, many challenge queries).
+A **hybrid argument** is a special case of game hopping used to handle multiple independent instances of the same operation (e.g., handling multiple challenge ciphertexts).
 
-Consider proving security for $q$ ciphertexts using a scheme secure for one. Define hybrid games $H_0, H_1, \ldots, H_q$ where $H_i$ encrypts the first $i$ messages as $m_1$ ("right") and the remaining $q - i$ messages as $m_0$ ("left"). Consecutive hybrids $H_i$ and $H_{i+1}$ differ only in the encryption of the $i{+}1$-th ciphertext, so any adversary distinguishing them breaks single-ciphertext security. A union bound then gives:
+Consider proving that a scheme secure against a single challenge is also secure against $q$ challenges.
+Let $b \in \{0,1\}$ be the challenger's hidden bit.
+In the multi-challenge game, the adversary can submit $q$ pairs of messages $(m_{j,0}, m_{j,1})$ and receives encryptions of $m_{j,b}$.
+We define a sequence of hybrid games $H_0, H_1, \ldots, H_q$. In game $H_i$, the challenger encrypts the "right" message $m_{j,1}$ for the first $i$ queries, and the "left" message $m_{j,0}$ for the remaining $q - i$ queries.
+
+Notice that $H_0$ corresponds to encrypting all "left" messages ($b=0$), and $H_q$ corresponds to encrypting all "right" messages ($b=1$).
+Furthermore, consecutive hybrids $H_i$ and $H_{i+1}$ differ *only* in the encryption of the $(i{+}1)$-th ciphertext.
+Any adversary that can distinguish $H_i$ from $H_{i+1}$ can be used to break the single-challenge security of the scheme.
+By a triangle inequality (union bound) argument over the hybrids:
 
 $$
-\mathsf{Adv}^{H_0}_\mathcal{A} \leq q \cdot \mathsf{Adv}^{\text{single}}_\mathcal{B}.
+\mathsf{Adv}^{\text{multi}}_\mathcal{A} \leq q \cdot \mathsf{Adv}^{\text{single}}_\mathcal{B}.
 $$
 
-If $q$ is polynomial in $\lambda$ and the single-ciphertext advantage is negligible, the total advantage remains negligible. This is why CPA security with one challenge ciphertext implies security with polynomially many - and it is the standard argument behind the equivalence of single-challenge (FTG) and multiple-challenge (LOR) formulations for CPA and standard CCA notions.
+If $q$ is polynomial in $\lambda$ and the single-challenge advantage is negligible, the total multi-challenge advantage remains negligible.
+This is the standard argument establishing the equivalence of the single-challenge (Find-Then-Guess, FTG) and multi-challenge (Left-or-Right, LOR) formulations for standard CPA and CCA security.
 
-Notably, for some FHE-specific notions (CPAD, vCCAD in the approximate setting), the hybrid argument *fails* because the games are not perfectly indistinguishable across hybrids, which is precisely why the multi-challenge variants of those notions are strictly stronger than their single-challenge counterparts.
+Notably, for some FHE-specific notions (such as CPAD and vCCAD in the approximate setting), this hybrid argument *fails*.
+The simulated games are not perfectly indistinguishable across hybrids because the decryption of approximate ciphertexts leaks varying amounts of noise depending on the exact queries.
+This is precisely why the multi-challenge variants of those notions are strictly stronger than their single-challenge counterparts.
 
 ## Circular Security
 
-Standard security definitions assume the adversary never sees an encryption of the secret key under itself (or under a key that is part of a cycle). Circular security (also called Key-Dependent Message security, KDM security) is the property that a scheme remains secure even when the adversary can obtain encryptions of the secret key, or more generally of functions of the secret key, under the corresponding public key.
+Standard security definitions (like IND-CPA) guarantee that ciphertexts hide the underlying plaintext, provided the adversary's chosen messages *do not depend on the secret key*.
+**Circular security** (also called **Key-Dependent Message** or KDM security) is the property that a scheme remains secure even when the adversary is explicitly given encryptions of the secret key or functions of the secret key—under its corresponding public key.
 
-Formally, a cycle of length $\ell$ arises when there exist keys $sk_1, \ldots, sk_\ell$ such that $sk_i$ is encrypted under $pk_{i+1}$ (indices modulo $\ell$); the simplest case is a 1-cycle, where $sk$ is encrypted under its own $pk$.
+Formally, an $\ell$-cycle arises when there exist key pairs $(pk_1, sk_1), \ldots, (pk_\ell, sk_\ell)$ such that $sk_i$ is encrypted under $pk_{i+1}$ (with indices wrapping around modulo $\ell$). The most critical case in FHE is a 1-cycle, where $sk$ is encrypted under its own $pk$.
 
-Circular security assumptions are ubiquitous in FHE because several fundamental operations require publishing encryptions of secret key material:
+Circular security assumptions are ubiquitous and mandatory in FHE because fundamental homomorphic operations require publishing evaluation keys that consist of encrypted secret-key material:
 
-- **Bootstrapping:** the key operation that refreshes a noisy ciphertext. A bootstrapping key is a set of encryptions of the bits of the secret key under the same (or a different) public key. Without circular security, no security proof covers the joint distribution of the bootstrapping key and the ciphertexts it refreshes.
-- **Relinearization:** used after homomorphic multiplication to reduce the ciphertext size back to the original dimension. Relinearization keys are encryptions of products of secret-key coefficients, forming a 1-cycle.
-- **Rotation keys (Galois keys):** used in the CKKS, BGV, and BFV schemes to perform cyclic permutations on plaintext slots. Each rotation key is an encryption of a Galois automorphism applied to the secret key, again under the same public key.
+- **Bootstrapping:** The operation that refreshes a noisy ciphertext to evaluate circuits of arbitrary depth. A bootstrapping key contains encryptions of the secret key bits under the same public key.
+- **Relinearization:** Used after homomorphic multiplication to reduce the expanded ciphertext back to its original dimension. Relinearization keys encrypt the tensor product of the secret key with itself ($sk \otimes sk$).
+- **Rotation (Galois) keys:** Used in schemes like BGV, BFV, and CKKS to perform cyclic permutations on plaintext slots. These keys encrypt a Galois automorphism applied to the secret key.
 
-An important subtlety is that circular security is a strictly stronger assumption than standard CPA security: there exist encryption schemes that are provably CPA secure in the standard sense, yet can be completely broken once the adversary is given a single encryption of the secret key under itself. Constructions separating CPA security from circular security were given by [Black, Rogaway, and Shrimpton (2002)](https://eprint.iacr.org/2002/100), and refined in later work. In practice, all mainstream FHE schemes (BFV, BGV, CKKS, TFHE) are believed to be circularly secure based on heuristic arguments, but no unconditional proof exists from standard lattice assumptions alone.
+Without circular security, standard IND-CPA proofs provide absolutely *no guarantees* once these evaluation keys are published.
+Circular security is a strictly stronger assumption than standard CPA security: [Black, Rogaway, and Shrimpton (2002)](https://eprint.iacr.org/2002/100) and subsequent works demonstrated artificial encryption schemes that are provably CPA-secure but trivially leak the secret key if it is encrypted under itself.
+In practice, mainstream FHE schemes (BFV, BGV, CKKS, TFHE) are heuristically believed to be circularly secure, but no unconditional proof exists reducing this property to standard lattice assumptions like LWE.
 
 ## Further Reading
 
