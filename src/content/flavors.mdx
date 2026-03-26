@@ -9,7 +9,7 @@ Understanding these distinctions matters because equivalences that hold between 
 Indistinguishability is the most common formulation.
 The adversary chooses two messages $m_0, m_1$ and receives an encryption of one of them, chosen at random.
 It must guess which one was encrypted.
-A scheme is IND-secure (under a given attack model) if no efficient adversary can guess correctly with non-negligible advantage over $1/2$.
+A scheme is IND-secure (under a given attack model) if no efficient adversary has a non-negligible advantage (i.e., its winning probability is not significantly greater than $1/2$).
 This is the flavor used throughout this zoo unless stated otherwise, and the IND prefix is generally omitted.
 
 ### Semantic Security (SS)

@@ -30,13 +30,14 @@ A function that is *not* negligible is called **non-negligible**. For example, $
 
 A **security game** (also called a security experiment) is a formal protocol between a **challenger** and an **adversary** $\mathcal{A}$. The challenger simulates the "honest" world - it generates keys, answers oracle queries, and issues challenges. The adversary tries to win the game by guessing a hidden bit, recovering a key, or producing a forgery.
 
-The **advantage** of $\mathcal{A}$ in a game $G$ is a measure of how much better than random it does:
+The **advantage** of $\mathcal{A}$ in a game $G$ is a measure of how much better it performs than a trivial (random) strategy. Let $\Pr[\mathsf{Win}^G_\mathcal{A}]$ be the probability that $\mathcal{A}$ wins game $G$:
 
 $$
-\mathsf{Adv}^G_{\mathcal{A}}(\lambda) = \left| \Pr[\mathcal{A} \text{ wins}] - \Pr[\text{random guess wins}] \right|.
+\mathsf{Adv}^G_{\mathcal{A}}(\lambda) = \left| \Pr[\mathsf{Win}^G_\mathcal{A}] - \Pr[\text{random guess wins}] \right|.
 $$
 
-For indistinguishability games the baseline is $1/2$ (a random coin flip), so $\mathsf{Adv} = |\Pr[b' = b] - 1/2|$.
+- For **search games** (like key recovery or forgery), the baseline is typically $0$, so $\mathsf{Adv} = \Pr[\mathsf{Win}]$.
+- For **indistinguishability games** (like CPA or CCA), the baseline is $1/2$, so $\mathsf{Adv} = |\Pr[b' = b] - 1/2|$.
 
 A scheme is **secure** with respect to game $G$ if $\mathsf{Adv}^G_\mathcal{A}(\lambda)$ is negligible for every PPT adversary $\mathcal{A}$.
 
@@ -57,7 +58,7 @@ The quality of a reduction is measured by how much it degrades the advantage: if
 **Game hopping** (also called game playing) is a proof technique introduced by Bellare and Rogaway in which a proof proceeds through a sequence of games $G_0, G_1, \ldots, G_n$:
 
 - $G_0$ is the original security game.
-- $G_n$ is a trivial game in which the adversary's advantage is clearly $0$ (or $1/2$ for indistinguishability).
+- $G_n$ is a trivial game in which the adversary's advantage is clearly $0$ (e.g., because its winning probability is exactly $1/2$ for an indistinguishability game).
 - Each consecutive pair $G_i, G_{i+1}$ differs by a single conceptual step, and the change in the adversary's advantage between consecutive games is bounded.
 
 By a triangle inequality argument:
