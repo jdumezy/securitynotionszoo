@@ -55,7 +55,7 @@ The quality of a reduction is measured by how much it degrades the advantage: if
 
 ## Game Hopping
 
-**Game hopping** (also called game playing) is a proof technique introduced by Bellare and Rogaway in which a proof proceeds through a sequence of games $G_0, G_1, \ldots, G_n$:
+**Game hopping** (also called game playing) is a proof technique introduced by [Bellare and Rogaway (2004)](https://eprint.iacr.org/2004/331) and [Shoup (2004)](https://eprint.iacr.org/2004/332) in which a proof proceeds through a sequence of games $G_0, G_1, \ldots, G_n$:
 
 - $G_0$ is the original security game.
 - $G_n$ is a trivial game in which the adversary's advantage is clearly $0$ (e.g., because its winning probability is exactly $1/2$ for an indistinguishability game).
@@ -114,5 +114,6 @@ In practice, mainstream FHE schemes (BFV, BGV, CKKS, TFHE) are heuristically bel
 ## Further Reading
 
 The game-playing technique was systematized by [Bellare and Rogaway (2004)](https://eprint.iacr.org/2004/331).
+[Shoup (2004)](https://eprint.iacr.org/2004/332) presents a great introduction to game hoping proofs.
 Hybrid arguments and their role in proving CPA security appear in most cryptography textbooks; see Katz and Lindell, *Introduction to Modern Cryptography* (3rd ed.), or Boneh and Shoup, *A Graduate Course in Applied Cryptography*.
 For the failure of hybrid arguments in the approximate FHE setting, see [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf).
