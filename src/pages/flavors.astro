@@ -1,6 +1,9 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { Content } from "../content/flavors.mdx";
+import ReadProgressBar from "../components/ReadProgressBar.astro";
+import BackToTop from "../components/BackToTop.astro";
+import BackToTaxonomy from "../components/BackToTaxonomy.astro";
 ---
 
 <BaseLayout 
@@ -24,4 +27,8 @@ import { Content } from "../content/flavors.mdx";
   <div class="prose prose-slate dark:prose-invert prose-a:text-sky-600 dark:prose-a:text-accent hover:prose-a:text-sky-500 dark:hover:prose-a:text-sky-300 max-w-none prose-headings:text-slate-900 dark:prose-headings:text-slate-200 transition-colors text-justify">
     <Content />
   </div>
+
+  <BackToTaxonomy />
+  <ReadProgressBar />
+  <BackToTop />
 </BaseLayout>
