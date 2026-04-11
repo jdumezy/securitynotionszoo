@@ -3,6 +3,30 @@
 [![Netlify Status](https://api.netlify.com/api/v1/badges/b770d3e9-090e-4e9a-a149-5a8215657623/deploy-status)](https://app.netlify.com/projects/securitynotionszoo/deploys)
 
 A taxonomy site for cryptography security notions, specifically focusing on Fully Homomorphic Encryption (FHE).
+See it live at [securitynotionszoo.com](https://securitynotionszoo.com/).
+
+## Notions covered
+
+The taxonomy currently catalogues
+[CPA](https://securitynotionszoo.com/notions/cpa/),
+[CPAD](https://securitynotionszoo.com/notions/cpad/),
+[sCPAD](https://securitynotionszoo.com/notions/scpad/),
+[funcCPA](https://securitynotionszoo.com/notions/funccpa/),
+[CCA1](https://securitynotionszoo.com/notions/cca1/),
+[CCA1.5](https://securitynotionszoo.com/notions/cca15/),
+[CCA2](https://securitynotionszoo.com/notions/cca2/),
+[CCVA1](https://securitynotionszoo.com/notions/ccva1/),
+[CCVA2](https://securitynotionszoo.com/notions/ccva2/),
+[gCCA](https://securitynotionszoo.com/notions/gcca/),
+[RCCA](https://securitynotionszoo.com/notions/rcca/),
+[HCCA](https://securitynotionszoo.com/notions/hcca/),
+[IV-CCA](https://securitynotionszoo.com/notions/ivcca/),
+[vCCA](https://securitynotionszoo.com/notions/vcca/),
+[vCCAD](https://securitynotionszoo.com/notions/vccad/), and
+[SA](https://securitynotionszoo.com/notions/sa/).
+The [relation map](https://securitynotionszoo.com/) shows how they imply one another, and each notion links to its introducing papers.
+
+## Built with
 
 This project is built using [Astro](https://astro.build/), [Tailwind CSS](https://tailwindcss.com/), [MDX](https://mdxjs.com/), and [Mermaid.js](https://mermaid.js.org/).
 

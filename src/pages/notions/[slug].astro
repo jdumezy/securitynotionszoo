@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ReadProgressBar from '../../components/ReadProgressBar.astro';
 import BackToTop from '../../components/BackToTop.astro';
 import NotionNav from '../../components/NotionNav.astro';
+import { gitFirstMod, gitLastMod } from '../../lib/git-dates.mjs';
 
 export async function getStaticPaths() {
   const notions = await getCollection('notions');
@@ -26,13 +27,41 @@ const impliesResolved = notion.data.implies
 const impliedByResolved = notion.data.implied_by
   .map((a: string) => acronymMap.get(a))
   .filter(Boolean);
+
+const sourceFile = `src/content/notions/${notion.slug}.mdx`;
+const datePublished = gitFirstMod(sourceFile);
+const dateModified = gitLastMod(sourceFile);
+
+const alternateNames = [notion.data.title].filter(
+  (n) => n && n !== notion.data.acronym
+);
+
+const breadcrumbs = [
+  { name: 'Home', url: 'https://securitynotionszoo.com/' },
+  { name: notion.data.acronym },
+];
+
+// Keep the branded suffix only when the full title fits under Bing's
+// ~68 char soft limit. Long notions (e.g. CCA1.5, vCCAD) drop the
+// suffix and let the site brand come from og:site_name instead.
+const titleBase = `${notion.data.acronym} - ${notion.data.title}`;
+const BRAND_SUFFIX = ' | SecurityNotionsZoo';
+const TITLE_MAX = 68;
+const pageTitle =
+  titleBase.length + BRAND_SUFFIX.length <= TITLE_MAX
+    ? titleBase + BRAND_SUFFIX
+    : titleBase;
 ---
 
 <BaseLayout
-  title={`${notion.data.acronym} - ${notion.data.title} | SecurityNotionsZoo`}
+  title={pageTitle}
   description={notion.data.description}
   type="article"
-  keywords={[notion.data.acronym, `IND-${notion.data.acronym}`, notion.data.title, ...notion.data.tags, 'FHE', 'Fully Homomorphic Encryption', 'cryptography', 'security notion']}
+  keywords={[notion.data.acronym, notion.data.title, ...notion.data.tags, 'FHE', 'Fully Homomorphic Encryption', 'cryptography', 'security notion']}
+  datePublished={datePublished}
+  dateModified={dateModified}
+  definedTerm={{ termCode: notion.data.acronym, alternateName: alternateNames }}
+  breadcrumbs={breadcrumbs}
 >
   <div class="mb-10">
     <a href="/" class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-8 decoration-transparent transition-colors">
