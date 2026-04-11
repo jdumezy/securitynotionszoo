@@ -1,7 +1,7 @@
 ---
 title: "Functional Chosen Plaintext Attack"
 acronym: "funcCPA"
-description: "Extends CPA with a re-encryption oracle modeling interactive bootstrapping delegation; strictly stronger than CPA and weaker than CCA1."
+description: "Extends CPA with a re-encryption oracle modeling interactive bootstrapping delegation; strictly stronger than CPA."
 tags: ["Re-encryption oracle", "FHE-compatible"]
 introduced_in:
   - title: "Achievable CCA2 Relaxation for Homomorphic Encryption"
@@ -9,7 +9,7 @@ introduced_in:
     year: 2022
     link: "https://eprint.iacr.org/2022/282"
 implies: ["CPA"]
-implied_by: ["CCA1"]
+implied_by: ["vCCA"]
 ---
 
 ## Overview
@@ -20,7 +20,7 @@ In the funcCPA game, the adversary can submit a ciphertext $c$ and a function $g
 The motivation comes from practical FHE deployments where bootstrapping - the most expensive operation - can be replaced by a cheaper interactive protocol: the server sends a masked ciphertext to the client (or a local trusted proxy such as a secure enclave), which decrypts and re-encrypts it, and the server removes the mask homomorphically.
 The funcCPA notion captures the security requirement in this setting: even with access to this re-encryption oracle, the adversary should not be able to break indistinguishability.
 
-The key result is that funcCPA is strictly stronger than CPA but strictly weaker than CCA1.
+The key result is that funcCPA is strictly stronger than CPA.
 Intuitively, the re-encryption oracle is weaker than a full decryption oracle because it only returns encryptions of function outputs, never raw plaintexts.
 Akavia et al. provided construction blueprints to turn CPA-secure FHE schemes into funcCPA-secure ones.
 
@@ -42,7 +42,7 @@ A multi-input variant, funcCPA$^+$, where the oracle accepts multiple ciphertext
 
 The canonical deployment scenario is an FHE server that outsources bootstrapping to the client or to a secure enclave. Even though the enclave only sees masked values, the funcCPA model captures the adversary's ability to adaptively choose which ciphertexts get refreshed and through which functions.
 
-Some CPA-secure schemes become insecure when the adversary gains re-encryption access, while any CCA1-secure scheme is automatically safe in this setting (Theorem 4 in [Manulis and Nguyen, Eurocrypt 2024](https://eprint.iacr.org/2024/202)).
+Some CPA-secure schemes become insecure when the adversary gains re-encryption access.
 
 [Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036)](https://eprint.iacr.org/2025/2036) further showed that funcCPA-style extensions of CCA1 and vCCA (denoted CCA1R, CCA1M, vCCAR, vCCAM) all collapse back to their base notions.
 This means that the gap between CPA and funcCPA does not propagate to stronger notions: once a scheme is CCA1 or vCCA secure, adding recryption or multiplication oracles does not weaken it.
@@ -50,13 +50,12 @@ This means that the gap between CPA and funcCPA does not propagate to stronger n
 ## Achieving This Notion
 
 Akavia, Gentry, Halevi, and Vald provided blueprints for constructing funcCPA-secure schemes from CPA-secure FHE.
-Any CCA1-secure scheme trivially achieves funcCPA.
-For concrete constructions, Fontaine et al. showed that the Paillier scheme (under the heuristic that it is CCA1) combined with a multiplication oracle implemented via a semi-honest secure enclave achieves CCA1M security, which implies funcCPA.
-The "two-ciphertexts" construction $P^{(2)}$ based on Paillier, which achieves vCCA under a CPA + Linear-Only Homomorphism assumption, also achieves funcCPA as vCCA implies CCA1 which implies funcCPA.
+Any vCCA-secure scheme trivially achieves funcCPA.
+For concrete constructions, the "two-ciphertexts" construction $P^{(2)}$ based on Paillier, which achieves vCCA under a CPA + Linear-Only Homomorphism assumption, also achieves funcCPA as vCCA implies funcCPA.
 
 ## Further Reading
 
-The funcCPA notion was introduced by [Akavia, Gentry, Halevi, and Vald (TCC 2022; Journal of Cryptology 2025)](https://eprint.iacr.org/2022/282).
+The funcCPA notion was introduced by [Akavia, Gentry, Halevi, and Vald (JoC 2025)](https://eprint.iacr.org/2022/282).
 The equivalence between funcCPA and funcCPA$^+$ was established by [Shinozaki, Tanaka, Tezuka, and Yoshida (ePrint 2024/1166)](https://eprint.iacr.org/2024/1166).
 [Dodis, Halevi, and Wichs (TCC 2023)](https://eprint.iacr.org/2023/1443) further studied the setting where delegation targets a local client proxy.
 For the collapse of funcCPA-style CCA variants onto their base notions, see [Fontaine, Renard, Sirdey, and Stan (ePrint 2025/2036)](https://eprint.iacr.org/2025/2036).

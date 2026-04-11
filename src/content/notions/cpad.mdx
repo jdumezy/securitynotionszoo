@@ -6,10 +6,10 @@ tags: ["Constrained decryption oracle", "FHE-compatible", "Noise Probing"]
 introduced_in:
   - title: "On the Security of Homomorphic Encryption on Approximate Numbers"
     authors: ["Baiyu Li", "Daniele Micciancio"]
-    year: 2020
+    year: 2021
     link: "https://eprint.iacr.org/2020/1533"
 implies: ["CPA"]
-implied_by: ["vCCAD"]
+implied_by: ["sCPAD"]
 ---
 
 ## Overview
@@ -30,9 +30,9 @@ The CPAD security game is a Left-or-Right multiple-challenge game.
 Given a homomorphic encryption scheme $\mathcal{E}_H = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$, the game is parameterized by a hidden bit $b \xleftarrow{\textdollar} \{0,1\}$ and maintains an initially empty state $S$ of message-message-ciphertext triplets:
 
 1. **Key generation.** Run $(ek, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and give $ek$ to $\mathcal{A}$.
-2. **Encryption request.** On query $(\texttt{plaintext}, m)$, compute $c = \mathsf{Enc}(m)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m, m, c)]$.
-3. **Challenge request.** On query $(\texttt{test}, m_0, m_1)$ with $m_0 \neq m_1$, compute $c = \mathsf{Enc}(m_b)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m_0, m_1, c)]$.
-4. **Evaluation request.** On query $(\texttt{eval}, f, l_1, \ldots, l_K)$ with indices into $S$, compute $m'_0 = f(S[l_1].m_0, \ldots, S[l_K].m_0)$, $m'_1 = f(S[l_1].m_1, \ldots, S[l_K].m_1)$, and $c' = \mathsf{Eval}(f, S[l_1].c, \ldots, S[l_K].c)$. Return $c'$ to $\mathcal{A}$ and set $S := [S; (m'_0, m'_1, c')]$.
+2. **Encryption request.** On query $(\texttt{plaintext}, m)$, compute $c \leftarrow \mathsf{Enc}(m)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m, m, c)]$.
+3. **Challenge request.** On query $(\texttt{test}, m_0, m_1)$ with $m_0 \neq m_1$, compute $c \leftarrow \mathsf{Enc}(m_b)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m_0, m_1, c)]$.
+4. **Evaluation request.** On query $(\texttt{eval}, f, l_1, \ldots, l_K)$ with indices into $S$, compute $m'_0 = f(S[l_1].m_0, \ldots, S[l_K].m_0)$, $m'_1 = f(S[l_1].m_1, \ldots, S[l_K].m_1)$, and $c' \leftarrow \mathsf{Eval}(f, S[l_1].c, \ldots, S[l_K].c)$. Return $c'$ to $\mathcal{A}$ and set $S := [S; (m'_0, m'_1, c')]$.
 5. **Decryption request.** On query $(\texttt{ciphertext}, l)$ with $l$ an index into $S$: if $S[l].m_0 \neq S[l].m_1$, return $\bot$. Otherwise return $\mathsf{Dec}(S[l].c)$.
 6. **Guessing stage.** $\mathcal{A}$ outputs a guess $b'$. It wins if $b' = b$.
 
@@ -62,6 +62,19 @@ For exact schemes where decryption errors occur, parameter choices must be caref
 
 The CPAD notion was introduced by [Li and Micciancio (Eurocrypt 2021)](https://eprint.iacr.org/2020/1533).
 The paper also left open the question of whether single-challenge and multiple-challenge CPAD are equivalent. [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) settled this by proving that multiple-challenge CPAD is strictly stronger than single-challenge CPAD in the general (approximate) regime, i.e., $\mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$.
-They further identified intermediate variants $\mathsf{CPAD}_1 \prec \mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$, where $\mathsf{CPAD}_1$ restricts the decryption oracle to close after the challenge (analogous to the CCA1/CCA2 distinction).
+They further identified intermediate variants forming the following strict hierarchy in the general (approximate FHE) regime:
+
+$$\mathsf{CPAD}_1 \prec \mathsf{CPAD}_{1.5} \prec \mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$$
+
+where:
+- **$\mathsf{CPAD}_1$** restricts the decryption oracle to close after the challenge (analogous to CCA1 vs CCA2).
+- **$\mathsf{CPAD}_{1.5}$** augments $\mathsf{CPAD}_1$ with a *verification oracle* after the challenge, which reveals whether a ciphertext is valid (decrypts to non-$\bot$) without revealing the plaintext - analogous to the classical CCA1.5 (CCVA) notion of [Das, Dutta, and Adhikari (ProvSec 2013)].
+- **$\mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC}$** is the single-challenge variant (one challenge request with $m_0 \neq m_1$).
+- **$\mathsf{CPAD}$** is the full multiple-challenge (Left-or-Right) variant.
+
+All separations are strict [BCF+25, Propositions 4.1, 4.3–4.7]. A more permissive verification variant $\mathsf{CPAD}^+_{1.5}$ (which only refuses the challenge ciphertext itself, not all challenge-related ciphertexts) is also strictly stronger than $\mathsf{CPAD}_{1.5}$.
+
+In the correct regime, all variants collapse: $\mathsf{CPAD}_1 \equiv \mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC} \equiv \mathsf{CPAD}$ (all equivalent to CPA).
+
 [Alexandru, Al Badawi, Micciancio, and Polyakov (CIC 2026)](https://eprint.iacr.org/2024/203) introduced application-aware security, a weaker variant of CPAD relativized to a function class and noise estimation strategy.
 [Bernard, Joye, Smart, and Walter (Eurocrypt 2025)](https://eprint.iacr.org/2024/1718) introduced Strong CPAD (sCPAD) where the adversary additionally controls the encryption randomness, and showed it is strictly stronger than standard CPAD.

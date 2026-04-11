@@ -8,8 +8,8 @@ introduced_in:
     authors: ["Moni Naor", "Moti Yung"]
     year: 1990
     link: "https://www.wisdom.weizmann.ac.il/~naor/PAPERS/cca.pdf"
-implies: ["funcCPA"]
-implied_by: ["vCCA"]
+implies: ["CCVA1"]
+implied_by: ["CCA1.5"]
 ---
 
 ## Overview
@@ -19,8 +19,9 @@ The adversary can submit arbitrary ciphertexts for decryption during a learning 
 
 The name "lunchtime attack" comes from the scenario where an attacker has temporary physical access to a decryption device - for example, while its owner is away - and can decrypt ciphertexts of their choosing, but must later break a target ciphertext without further access.
 
-In the FHE setting, CCA1 has gained renewed interest because it represents the strongest "standard" notion that is compatible with homomorphic evaluation.
+In the FHE setting, CCA1 has gained renewed interest because it is the strongest **classical** security notion that remains compatible with homomorphic evaluation.
 Since homomorphic operations necessarily produce new ciphertexts related to existing ones, CCA2 security (which allows post-challenge decryption queries) is incompatible with homomorphic properties.
+More recently, FHE-specific notions such as vCCA and vCCAD have been shown to be strictly stronger than CCA1 while remaining FHE-compatible.
 
 ## Formal Definition
 
@@ -46,12 +47,12 @@ The scheme is IND-CCA1 secure if this advantage is negligible for all PPT advers
 CCA1 security protects against adversaries who can temporarily exploit decryption capabilities to learn structural information about the scheme before attempting to break a target ciphertext.
 This covers scenarios such as an attacker with temporary access to a decryption key or device, an insider who loses access privileges before the sensitive message is transmitted, or an adversary who can exploit decryption-related side channels during a setup phase.
 
-In the FHE context, CCA1 is a natural security target for schemes deployed in settings where the adversary may have had prior access to decryption capabilities, as it is the strongest indistinguishability-based notion compatible with homomorphic evaluation.
+In the FHE context, CCA1 is a natural security target for schemes deployed in settings where the adversary may have had prior access to decryption capabilities, as it is the strongest classical indistinguishability-based notion compatible with homomorphic evaluation.
 
 ## Achieving This Notion
 
-Constructing CCA1-secure FHE is non-trivial. Generic transformations from CPA to CCA1 for standard encryption (e.g., using non-interactive zero-knowledge proofs in the Naor-Yung double encryption paradigm) are known, but adapting these to preserve homomorphic properties requires care, as known FHE schemes are usually not perfect correct.
-Recent constructions like [GG-GSW](https://eprint.iacr.org/2026/316.pdf) by Nguyen make use of lattice trapdoors to achieve CCA1 leveled homomorphic encryption.
+Constructing CCA1-secure FHE is non-trivial. Generic transformations from CPA to CCA1 for standard encryption (e.g., using non-interactive zero-knowledge proofs in the Naor-Yung double encryption paradigm) are known, but adapting these to preserve homomorphic properties requires care, as known FHE schemes are usually not perfectly correct.
+Recent constructions make use of lattice trapdoors to achieve CCA1 leveled homomorphic encryption.
 
 ## Further Reading
 

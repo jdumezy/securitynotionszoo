@@ -28,6 +28,8 @@ A function that is *not* negligible is called **non-negligible**. For example, $
 
 ## Game-Based Security Definitions
 
+Security notions are named **XXX-YYY**, where XXX denotes the security property the adversary tries to break (e.g., IND for indistinguishability) and YYY denotes the capabilities granted to the adversary (e.g., CPA, CCA1, CCA2). This naming convention is used throughout the zoo.
+
 A **security game** (also called a security experiment) is a formal protocol between a **challenger** and an **adversary** $\mathcal{A}$. The challenger simulates the "honest" world - it generates keys, answers oracle queries, and issues challenges. The adversary tries to win the game by guessing a hidden bit, recovering a key, or producing a forgery.
 
 The **advantage** of $\mathcal{A}$ in a game $G$ is a measure of how much better it performs than a trivial (random) strategy. Let $\Pr[\mathsf{Win}^G_\mathcal{A}]$ be the probability that $\mathcal{A}$ wins game $G$:
@@ -97,7 +99,7 @@ This is precisely why the multi-challenge variants of those notions are strictly
 ## Circular Security
 
 Standard security definitions (like IND-CPA) guarantee that ciphertexts hide the underlying plaintext, provided the adversary's chosen messages *do not depend on the secret key*.
-**Circular security** (also called **Key-Dependent Message** or KDM security) is the property that a scheme remains secure even when the adversary is explicitly given encryptions of the secret key or functions of the secret key—under its corresponding public key.
+**Circular security** (also called **Key-Dependent Message** or KDM security) is the property that a scheme remains secure even when the adversary is explicitly given encryptions of the secret key or functions of the secret key-under its corresponding public key.
 
 Formally, an $\ell$-cycle arises when there exist key pairs $(pk_1, sk_1), \ldots, (pk_\ell, sk_\ell)$ such that $sk_i$ is encrypted under $pk_{i+1}$ (with indices wrapping around modulo $\ell$). The most critical case in FHE is a 1-cycle, where $sk$ is encrypted under its own $pk$.
 
@@ -114,6 +116,7 @@ In practice, mainstream FHE schemes (BFV, BGV, CKKS, TFHE) are heuristically bel
 ## Further Reading
 
 The game-playing technique was systematized by [Bellare and Rogaway (2004)](https://eprint.iacr.org/2004/331).
-[Shoup (2004)](https://eprint.iacr.org/2004/332) presents a great introduction to game hoping proofs.
+[Shoup (2004)](https://eprint.iacr.org/2004/332) presents a great introduction to game hopping proofs.
 Hybrid arguments and their role in proving CPA security appear in most cryptography textbooks; see Katz and Lindell, *Introduction to Modern Cryptography* (3rd ed.), or Boneh and Shoup, *A Graduate Course in Applied Cryptography*.
-For the failure of hybrid arguments in the approximate FHE setting, see [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf).
+For the failure of hybrid arguments in the approximate FHE setting, see [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812).
+For a comprehensive treatment of security notions for FHE - including definitions, relations, separations, and constructions - see the PhD thesis of [Renard (2025)](https://theses.hal.science/tel-05421880v1/file/157007_RENARD_2025_archivage.pdf).

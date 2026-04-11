@@ -1,12 +1,12 @@
 ---
-title: "Verified Chosen Ciphertext Attack with Decryption"
+title: "Verifiable Chosen Ciphertext Attack with Decryption"
 acronym: "vCCAD"
 description: "Strengthens vCCA to cover approximate FHE by combining semantic malleability filtering with CPAD-style noise-leakage protection."
 tags: ["Filtered adaptive decryption oracle", "FHE-compatible", "SNARK-based", "Noise Probing"]
 introduced_in:
   - title: "Relations among new CCA security notions for approximate FHE"
     authors: ["Chris Brzuska", "Sébastien Canard", "Caroline Fontaine", "Duong Hieu Phan", "David Pointcheval", "Marc Renard", "Renaud Sirdey"]
-    year: 2024
+    year: 2025
     link: "https://eprint.iacr.org/2024/812"
 implies: ["vCCA", "sCPAD"]
 implied_by: ["RCCA"]
@@ -14,7 +14,7 @@ implied_by: ["RCCA"]
 
 ## Overview
 
-Verified Chosen Ciphertext Attack with Decryption (vCCAD) security, introduced by Brzuska, Canard, Fontaine, Phan, Pointcheval, Renard, and Sirdey, is a strengthening of vCCA security designed to cover the full spectrum of FHE schemes, including approximate ones.
+Verifiable Chosen Ciphertext Attack with Decryption (vCCAD) security, introduced by Brzuska, Canard, Fontaine, Phan, Pointcheval, Renard, and Sirdey, is a strengthening of vCCA security designed to cover the full spectrum of FHE schemes, including approximate ones.
 While vCCA was defined and studied by Manulis and Nguyen only under the correctness assumption, vCCAD adapts the approach to the general regime by incorporating the CPAD-style decryption oracle semantics into the vCCA framework.
 
 The key insight is that vCCA's post-challenge decryption oracle filters ciphertexts based on whether the challenge ciphertext appears among their extracted inputs (a syntactic check).
@@ -42,6 +42,8 @@ Where $\mathsf{left}(c) = S[i].m_0$ if $c$ is registered at index $i$ in the sta
 In the public-key setting, an additional extractor $\mathsf{Extract}'$ is needed to recover the message and randomness from fresh ciphertexts the adversary generated on its own (since these are not registered in the game state).
 The $\mathsf{left}'$ and $\mathsf{right}'$ functions fall back to $\mathsf{Extract}'$ when a ciphertext is not found in the state.
 
+In the public-key setting, the vCCAD adversary can encrypt with chosen randomness on its own and submit the resulting ciphertexts for decryption via $\mathsf{Extract}'$. This subsumes the sCPAD model's randomness-controlled encryption oracle, hence vCCAD implies sCPAD.
+
 Encryption, challenge, and evaluation requests follow the same structure as the CPAD game.
 The scheme is vCCAD-secure if the adversary's advantage is negligible for all PPT adversaries.
 
@@ -51,7 +53,7 @@ Like vCCA, vCCAD prevents malleability-based attacks where an adversary homomorp
 Like CPAD, it also prevents noise-leakage attacks where the adversary exploits decryptions of legitimately derived ciphertexts to recover secret key material from approximate decryption errors.
 
 The separation results established by Brzuska et al. show that neither vCCA nor CPAD alone is sufficient in the approximate FHE setting.
-vCCA does not imply $\mathsf{CPAD}_2$ (the decryption noise leakage is invisible to the vCCA game), and CPAD does not imply vCCA (the CPAD game provides no decryption oracle for adversary-crafted ciphertexts).
+vCCA does not imply $\mathsf{CPAD}_2$ (the decryption noise leakage is invisible to the vCCA game), and $\mathsf{CPAD}$ does not imply vCCA (the CPAD game provides no decryption oracle for adversary-crafted ciphertexts).
 vCCAD subsumes both. Furthermore, unlike vCCA where single and multiple challenge variants are equivalent, the multiple-challenge variant of vCCAD is strictly stronger than its single-challenge counterpart ($\mathsf{vCCAD}^{SC} \prec \mathsf{vCCAD}$) in the general regime.
 
 ## Achieving This Notion

@@ -8,7 +8,7 @@ introduced_in:
     authors: ["Charles Rackoff" , "Daniel R. Simon" ]
     year: 1991
     link: "https://link.springer.com/chapter/10.1007/3-540-46766-1_35"
-implies: ["RCCA"]
+implies: ["gCCA"]
 implied_by: []
 ---
 
@@ -17,8 +17,10 @@ implied_by: []
 Chosen Ciphertext Attack 2 (CCA2) security, also known as IND-CCA2 or adaptive chosen ciphertext security, is the strongest standard indistinguishability-based security notion for encryption.
 It extends CCA1 by allowing the adversary to continue querying the decryption oracle *even after* receiving the challenge ciphertext, with the sole restriction that it may not submit the challenge ciphertext itself for decryption.
 
+CCA2 sits at the top of the classical hierarchy of indistinguishability notions: IND-CPA $\Leftarrow$ IND-CCA1 $\Leftarrow$ IND-CCA2, where both implications are strict [[BDJR97](https://web.cs.ucdavis.edu/~rogaway/papers/sym-enc.pdf), [BDPR98](https://www.di.ens.fr/david.pointcheval/Documents/Papers/1998_crypto.pdf)].
 CCA2 captures a very powerful adversary model: one who can adaptively craft decryption queries based on the challenge ciphertext, attempting to extract information through related ciphertexts.
 This notion is considered the gold standard for general-purpose public-key encryption, although it is sometimes criticized for being too strong.
+As with CPA, the single-challenge and multiple-challenge variants of CCA2 are equivalent [[BDPR98](https://www.di.ens.fr/david.pointcheval/Documents/Papers/1998_crypto.pdf)].
 
 In the FHE context, CCA2 is incompatible with homomorphic evaluation. Given a challenge ciphertext $c^*$ encrypting $m_b$, an adversary can homomorphically compute, say, $c' \leftarrow \mathsf{Eval}(f, c^*)$ for a known function $f$, then query the decryption oracle on $c'$ to recover $f(m_b)$, which trivially distinguishes $m_0$ from $m_1$ if $f(m_0) \neq f(m_1)$.
 
@@ -52,10 +54,10 @@ For FHE, this fundamental incompatibility has driven research into relaxed CCA-t
 
 ## Achieving This Notion
 
-For standard public-key encryption, CCA2 security is achieved through several well-known paradigms: the [Cramer–Shoup scheme](https://link.springer.com/chapter/10.1007/BFb0055717) (the first practical CCA2-secure scheme without random oracles), the [Fujisaki–Okamoto transform](https://link.springer.com/chapter/10.1007/3-540-48405-1_34) (in the random oracle model, widely used in post-quantum KEMs such as those in the NIST standards), and OAEP for RSA-based encryption. In the lattice setting, CCA2-secure (non-homomorphic) encryption can be built from LWE using standard transformations.
+For standard public-key encryption, CCA2 security is achieved through several well-known paradigms: the [Cramer and Shoup (CRYPTO 1998)](https://link.springer.com/chapter/10.1007/BFb0055717) scheme (the first practical CCA2-secure scheme without random oracles), the [Fujisaki and Okamoto (PKC 1999)](https://link.springer.com/chapter/10.1007/3-540-48405-1_34) transform (in the random oracle model, widely used in post-quantum KEMs such as those in the NIST standards), and OAEP for RSA-based encryption. In the lattice setting, CCA2-secure (non-homomorphic) encryption can be built from LWE using standard transformations.
 
 
 ## Further Reading
 
 The formal definition of CCA2 was given by [Rackoff and Simon (1991)](https://link.springer.com/chapter/10.1007/3-540-46766-1_35), building on the CCA1 notion of [Naor and Yung (1990)](https://www.wisdom.weizmann.ac.il/~naor/PAPERS/cca.pdf).
-The [Cramer–Shoup cryptosystem (1998)](https://link.springer.com/chapter/10.1007/BFb0055717) was the first efficient construction achieving CCA2 without random oracles.
+The [Cramer and Shoup (CRYPTO 1998)](https://link.springer.com/chapter/10.1007/BFb0055717) cryptosystem was the first efficient construction achieving CCA2 without random oracles.

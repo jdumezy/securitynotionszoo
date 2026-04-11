@@ -16,18 +16,18 @@ implied_by: ["vCCAD"]
 
 Strong Chosen Plaintext Attack with Decryption (sCPAD) security is a strengthening of CPAD security introduced to address a mismatch between the CPAD security model and practical public-key FHE deployments.
 In the CPAD game, fresh ciphertexts in the adversary's state can only be produced by the encryption oracle, which samples its own randomness internally.
-However, in real-world public-key settings, an adversary possesses the public key and can encrypt messages using randomness of its choosing — it may only be required to prove that the resulting ciphertext is well-formed, not that the randomness was sampled honestly.
+However, in real-world public-key settings, an adversary possesses the public key and can encrypt messages using randomness of its choosing - it may only be required to prove that the resulting ciphertext is well-formed, not that the randomness was sampled honestly.
 The sCPAD game closes this gap by giving the adversary an additional encryption oracle that accepts adversarially chosen randomness.
 
-The key insight is that even though a public-key adversary can always compute encryptions on its own, the ability to inject ciphertexts with chosen randomness into the game state — and then request their decryption after homomorphic operations — can leak information that the standard CPAD model does not capture.
+The key insight is that even though a public-key adversary can always compute encryptions on its own, the ability to inject ciphertexts with chosen randomness into the game state - and then request their decryption after homomorphic operations - can leak information that the standard CPAD model does not capture.
 Bernard, Joye, Smart, and Walter proved that sCPAD is strictly stronger than CPAD: there exist schemes that are CPAD-secure but completely sCPAD-insecure, even in the public-key setting.
 
 ## Formal Definition
 
 The sCPAD security game extends the CPAD game by adding a second encryption oracle that takes adversarially chosen randomness.
-Given a public-key FHE scheme $\mathcal{E}_H = (\mathsf{Gen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$ with message space $\mathcal{M}$ and encryption randomness space $\mathcal{R}$, the game is parameterized by a hidden bit $b \xleftarrow{\textdollar} \{0,1\}$ and maintains an initially empty state $S$:
+Given a public-key FHE scheme $\mathcal{E}_H = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$ with message space $\mathcal{M}$ and encryption randomness space $\mathcal{R}$, the game is parameterized by a hidden bit $b \xleftarrow{\textdollar} \{0,1\}$ and maintains an initially empty state $S$:
 
-1. **Key generation.** Run $(pk, ek, sk) \leftarrow \mathsf{Gen}(1^\lambda)$ and give $(pk, ek)$ to $\mathcal{A}$.
+1. **Key generation.** Run $(pk, ek, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and give $(pk, ek)$ to $\mathcal{A}$.
 2. **Challenge encryption request.** On query $(\texttt{test}, m_0, m_1)$ with $m_0 \neq m_1$, compute $c \leftarrow \mathsf{Enc}_{pk}(m_b)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m_0, m_1, c)]$.
 3. **Randomness-controlled encryption request.** On query $(\textsf{Enc}', m, r)$ with $m \in \mathcal{M}$ and $r \in \mathcal{R}$, compute $c \leftarrow \mathsf{Enc}_{pk}(m; r)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m, m, c)]$.
 4. **Evaluation request.** On query $(\texttt{eval}, f, l_1, \ldots, l_K)$ with indices into $S$, compute $m'_0 = f(S[l_1].m_0, \ldots, S[l_K].m_0)$, $m'_1 = f(S[l_1].m_1, \ldots, S[l_K].m_1)$, and $c' \leftarrow \mathsf{Eval}_{ek}(f, S[l_1].c, \ldots, S[l_K].c)$. Return $c'$ to $\mathcal{A}$ and set $S := [S; (m'_0, m'_1, c')]$.
@@ -40,7 +40,7 @@ Note that the randomness-controlled oracle $\mathsf{Enc}'$ can only be used for 
 
 ## Separation from CPAD
 
-The implication sCPAD $\Rightarrow$ CPAD is immediate, since the CPAD adversary's oracles are a strict subset of those available in the sCPAD game.
+The implication sCPAD $\implies$ CPAD is immediate, since the CPAD adversary's oracles are a strict subset of those available in the sCPAD game.
 The reverse does not hold.
 
 For **symmetric-key** schemes, the separation is straightforward: in Regev-type encryption, choosing the encryption randomness means the adversary knows the noise term and can remove it, yielding a linear equation in the secret key that is recoverable after $n$ queries.
@@ -66,7 +66,7 @@ The paper gives a sufficient condition: if a statistically correct scheme has **
 Concretely, the evaluation algorithm is modified to $\mathsf{Eval}'_{ek}(g, c_1, \ldots, c_\ell) = \mathsf{Eval}_{ek}(g, \mathsf{re\text{-}rand}(c_1), \ldots, \mathsf{re\text{-}rand}(c_\ell))$, where $\mathsf{re\text{-}rand}$ produces a distribution statistically close to a fresh encryption.
 Combining this with an IND-CPA-secure scheme immediately yields sCPAD security.
 
-For **TFHE** specifically, re-randomization can be performed by adding an encryption of zero (using the public key), and the paper shows that their new modulus-switching techniques — the probabilistic and exact drift defenses — enable TFHE parameter sets originally designed for IND-CPA security to achieve sCPAD security with negligible overhead.
+For **TFHE** specifically, re-randomization can be performed by adding an encryption of zero (using the public key), and the paper shows that their new modulus-switching techniques - the probabilistic and exact drift defenses - enable TFHE parameter sets originally designed for IND-CPA security to achieve sCPAD security with negligible overhead.
 
 ## Further Reading
 

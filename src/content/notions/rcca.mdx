@@ -9,7 +9,7 @@ introduced_in:
     year: 2003
     link: "https://link.springer.com/chapter/10.1007/978-3-540-45146-4_33"
 implies: ["vCCAD"]
-implied_by: ["CCA2"]
+implied_by: ["gCCA"]
 ---
 
 ## Overview
@@ -39,22 +39,18 @@ The scheme is IND-RCCA secure if this advantage is negligible for all PPT advers
 
 ## Attacks & Relevance
 
-{/* CCA2 security prevents an adversary from exploiting the malleability of ciphertexts.
-Classic attacks thwarted by CCA2 include [Bleichenbacher's attack on RSA PKCS#1 v1.5](https://link.springer.com/chapter/10.1007/BFb0055716), where an adversary multiplies a target ciphertext by known values and uses a decryption oracle (via error messages) to gradually recover the plaintext, as well as padding oracle attacks more generally.
-For standard (non-homomorphic) encryption, CCA2 is the expected security level in practice.
-It is required for secure key transport, hybrid encryption, and any setting where ciphertexts travel over channels controlled by an adversary.
+RCCA security prevents an adversary from re-randomizing or re-encrypting a challenge ciphertext to circumvent the CCA2 restriction. While the CCA2 oracle only refuses the exact challenge ciphertext $c^*$, an adversary could re-randomize $c^*$ into a different ciphertext $c'$ with the same plaintext and submit $c'$ for decryption. The RCCA oracle blocks this by refusing all ciphertexts that decrypt to $m_0$ or $m_1$.
 
-For FHE, as noted above, CCA2 is fundamentally at odds with the homomorphic property.
-The ability to meaningfully transform ciphertexts is exactly what CCA2 is designed to prevent.
-This has led to a research directions: relaxed CCA-type notions that accommodate homomorphic evaluation (such as CCA1, funcCPA, CPAD, or vCCA). */}
+RCCA was introduced by Canetti, Krawczyk, and Nielsen as a notion that is strong enough for most practical applications of CCA2 security (key transport, hybrid encryption) while being more permissive toward benign ciphertext transformations such as re-randomization. It is considered by many to be the "right" security notion for encryption in practice.
+
+For FHE, RCCA is incompatible with homomorphic evaluation: given $c^*$ encrypting $m_b$, the adversary can compute $c' = \mathsf{Eval}(f, c^*)$ for a function $f$ with $f(m_0) \neq f(m_1)$ and $f(m_b) \notin \{m_0, m_1\}$, then query the decryption oracle to learn $f(m_b)$ and distinguish.
 
 ## Achieving This Notion
 
-{/* For standard public-key encryption, CCA2 security is achieved through several well-known paradigms: the [Cramer–Shoup scheme](https://link.springer.com/chapter/10.1007/BFb0055717) (the first practical CCA2-secure scheme without random oracles), the [Fujisaki–Okamoto transform](https://link.springer.com/chapter/10.1007/3-540-48405-1_34) (in the random oracle model, widely used in post-quantum KEMs such as those in the NIST standards), and OAEP for RSA-based encryption. In the lattice setting, CCA2-secure (non-homomorphic) encryption can be built from LWE using standard transformations.
+RCCA security is achieved by any CCA2-secure scheme (the implication CCA2 $\Rightarrow$ RCCA is immediate since the CCA2 oracle is strictly more restrictive). Canetti, Krawczyk, and Nielsen also gave direct constructions based on the Cramer-Shoup framework.
 
-For FHE, achieving full CCA2 security while retaining homomorphic functionality is generally impossible, as it is fundammentally incompatible with malleability. */}
+For FHE, RCCA is not achievable - the same fundamental incompatibility as CCA2 applies, since the adversary can use homomorphic evaluation to produce ciphertexts with discriminating plaintexts that are not in $\{m_0, m_1\}$.
 
 ## Further Reading
 
-{/* The formal definition of CCA2 was given by [Rackoff and Simon (1991)](https://link.springer.com/chapter/10.1007/3-540-46766-1_35), building on the CCA1 notion of [Naor and Yung (1990)](https://www.wisdom.weizmann.ac.il/~naor/PAPERS/cca.pdf).
-The [Cramer–Shoup cryptosystem (1998)](https://link.springer.com/chapter/10.1007/BFb0055717) was the first efficient construction achieving CCA2 without random oracles. */}
+The RCCA notion was introduced by [Canetti, Krawczyk, and Nielsen (CRYPTO 2003)](https://link.springer.com/chapter/10.1007/978-3-540-45146-4_33). It sits strictly between CCA2 and vCCAD in the hierarchy of security notions. For a comparison with FHE-specific notions, see [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812).

@@ -21,7 +21,7 @@ This equivalence was established by Goldwasser and Micali (1984).
 
 ### Non-Malleability (NM)
 
-Non-malleability requires that an adversary, given a challenge ciphertext, cannot produce a *related* ciphertext—one whose plaintext bears a meaningful relation to the challenge plaintext. 
+Non-malleability requires that an adversary, given a challenge ciphertext, cannot produce a *related* ciphertext-one whose plaintext bears a meaningful relation to the challenge plaintext. 
 
 In the context of FHE, non-malleability is a critical distinguishing factor.
 Because FHE schemes are explicitly designed to allow computation on encrypted data, they are **inherently malleable**.
@@ -51,9 +51,11 @@ These are not separate security flavors, but rather two structurally distinct fo
 For CPA and CCA security of standard exact encryption, [Bellare, Desai, Jokipii, and Rogaway (1997)](https://web.cs.ucdavis.edu/~rogaway/papers/sym-enc.pdf) showed that FTG and LOR are polynomially equivalent.
 A standard hybrid argument proves that an adversary making $q$ queries to an LOR oracle can be reduced to an FTG adversary with its advantage degraded by a factor of $q$. 
 
-However, this equivalence does not hold universally. For IND-CPAD and IND-vCCAD security in the approximate FHE regime, [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812.pdf) proved that the LOR (multi-challenge) variants are strictly stronger than the FTG (single-challenge) variants.
+However, this equivalence does not hold universally. For IND-CPAD and IND-vCCAD security in the approximate FHE regime, [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) proved that the LOR (multi-challenge) variants are strictly stronger than the FTG (single-challenge) variants.
 
 ### Further Reading
 
 The systematic study of relations among security flavors for public-key encryption was initiated by [Bellare, Desai, Pointcheval, and Rogaway (CRYPTO 1998)](https://www.di.ens.fr/david.pointcheval/Documents/Papers/1998_crypto.pdf) for the public-key setting and by [Bellare, Desai, Jokipii, and Rogaway (FOCS 1997)](https://web.cs.ucdavis.edu/~rogaway/papers/sym-enc.pdf) for the symmetric setting.
+Other paradigms exist beyond indistinguishability-based games, including simulation-based (SIM) security and real-or-random (RoR) security. This zoo focuses on game-based definitions.
+
 For a textbook treatment, see Katz and Lindell, *Introduction to Modern Cryptography*.
