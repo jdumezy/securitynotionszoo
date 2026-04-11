@@ -824,7 +824,7 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
         const SVG_NS = "http://www.w3.org/2000/svg";
         // Hit area: wide invisible stroke so taps near the arrow still register.
         // `pointer-events="stroke"` makes hit-testing ignore the transparent
-        // stroke colour — without it, SVG's default visiblePainted mode would
+        // stroke colour: without it, SVG's default visiblePainted mode would
         // skip any line whose stroke has alpha 0.
         const hit = document.createElementNS(SVG_NS, "line");
         hit.setAttribute("x1", String(opts.x1));

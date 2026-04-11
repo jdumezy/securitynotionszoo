@@ -29,20 +29,23 @@ const renderedNotions = await Promise.all(
 
   <div class="mb-8">
     <div class="relative">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       <input
         type="search"
         id="notion-search"
-        placeholder="Search by acronym, title, tag, or description…"
-        aria-label="Search notions"
+        placeholder="Filter by acronym, title, tag, or description…"
+        aria-label="Filter notions on this page"
         class="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800/20 border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500 dark:focus:border-accent focus:ring-2 focus:ring-sky-500/20 dark:focus:ring-accent/20 transition-colors"
       />
     </div>
-    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400 transition-colors">
-      Showing <span id="search-count">{renderedNotions.length}</span> of {renderedNotions.length} notions
+    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400 transition-colors flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span>
+        Showing <span id="search-count">{renderedNotions.length}</span> of {renderedNotions.length} notions
+      </span>
+      <span class="text-xs opacity-70">Filters this page only. Use <kbd class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[10px] font-mono">⌘K</kbd> for site-wide search.</span>
     </p>
     <p id="search-empty" class="mt-6 text-center text-slate-500 dark:text-slate-400 hidden transition-colors">
-      No notions match your search.
+      No notions match your filter.
     </p>
   </div>
 

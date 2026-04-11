@@ -1,5 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
@@ -8,6 +10,28 @@ import remarkMath from 'remark-math';
 import rehypeMathjax from 'rehype-mathjax';
 
 import { gitLastMod } from './src/lib/git-dates.mjs';
+import rehypeHeadingIds from './src/lib/rehype-heading-ids.mjs';
+import rehypeCrosslink from './src/lib/rehype-crosslink.mjs';
+import { glossary } from './src/lib/glossary.mjs';
+
+// Load the acronym → slug map once at config time by parsing each notion
+// frontmatter. Keeps the crosslink plugin in sync with the collection
+// without duplication.
+function loadNotionAcronyms() {
+  const dir = 'src/content/notions';
+  const out = [];
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.endsWith('.mdx')) continue;
+    const body = fs.readFileSync(path.join(dir, name), 'utf8');
+    const frontmatter = body.match(/^---\n([\s\S]*?)\n---/);
+    if (!frontmatter) continue;
+    const acr = frontmatter[1].match(/^acronym:\s*"(.+)"/m);
+    if (acr) out.push({ acronym: acr[1], slug: name.replace(/\.mdx$/, '') });
+  }
+  return out;
+}
+
+const notionAcronyms = loadNotionAcronyms();
 
 const buildStart = new Date().toISOString();
 
@@ -35,7 +59,11 @@ export default defineConfig({
 
   markdown: {
     remarkPlugins: [remarkMath],
-    rehypePlugins: [rehypeMathjax],
+    rehypePlugins: [
+      rehypeMathjax,
+      rehypeHeadingIds,
+      [rehypeCrosslink, { notions: notionAcronyms, glossary }],
+    ],
   },
 
   integrations: [

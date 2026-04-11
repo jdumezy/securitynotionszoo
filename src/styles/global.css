@@ -25,4 +25,30 @@
   .prose mjx-container:not([display="true"]) svg {
     display: inline;
   }
+
+  /* Auto-linked notion acronyms inherit prose link styling but use a thinner
+     underline so the prose doesn't feel too dense. */
+  a.auto-link {
+    text-decoration-thickness: 1px;
+    text-decoration-color: currentColor;
+    text-decoration-style: solid;
+    text-decoration-line: underline;
+    opacity: 0.95;
+  }
+  a.auto-link:hover {
+    opacity: 1;
+  }
+
+  /* Glossary terms get a dotted underline + help cursor, signaling a
+     definition is available on hover / tap. */
+  a.glossary-link {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    cursor: help;
+  }
+  a.glossary-link:hover {
+    text-decoration-style: solid;
+  }
 }

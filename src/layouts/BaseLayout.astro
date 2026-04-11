@@ -3,6 +3,7 @@ import "../styles/global.css";
 import ThemeToggle from "../components/ThemeToggle.astro";
 import SEO from "../components/SEO.astro";
 import Logo from "../components/Logo.astro";
+import SearchModal from "../components/SearchModal.astro";
 
 interface BreadcrumbItem {
   name: string;
@@ -90,15 +91,44 @@ const isGamesPage = Astro.url.pathname.startsWith("/games");
       <header
         class="mb-12 border-b border-slate-200 dark:border-slate-800 pb-6"
       >
-        <nav class="flex justify-between items-center">
+        <nav class="flex justify-between items-center gap-3">
           <a
             href="/"
+            aria-label="SecurityNotionsZoo home"
             class="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors min-w-0"
           >
-            <Logo class="w-7 h-7 sm:w-8 sm:h-8 text-current shrink-0" />
-            <span class="truncate">SecurityNotionsZoo</span>
+            <Logo class="w-8 h-8 text-current shrink-0" />
+            <span class="truncate hidden sm:inline">SecurityNotionsZoo</span>
           </a>
-          <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+          <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+            <button
+              type="button"
+              id="search-open-btn"
+              aria-label="Search (Cmd+K)"
+              title="Search"
+              class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0"
+                ><circle cx="11" cy="11" r="8"></circle><path
+                  d="m21 21-4.3-4.3"></path></svg
+              >
+              <span class="hidden sm:inline">Search</span>
+              <kbd
+                class="hidden md:inline-flex items-center px-1.5 py-0.5 ml-1 text-[10px] font-sans font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded"
+              >
+                <span class="mr-0.5">⌘</span>K
+              </kbd>
+            </button>
             <a
               href="/games/"
               class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
@@ -130,6 +160,8 @@ const isGamesPage = Astro.url.pathname.startsWith("/games");
         <p>&copy; {new Date().getFullYear()} SecurityNotionsZoo.</p>
       </footer>
     </div>
+
+    <SearchModal />
 
     {
       !isGamesPage && (
