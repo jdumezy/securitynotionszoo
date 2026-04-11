@@ -32,9 +32,9 @@ const sourceFile = `src/content/notions/${notion.slug}.mdx`;
 const datePublished = gitFirstMod(sourceFile);
 const dateModified = gitLastMod(sourceFile);
 
-const alternateNames = Array.from(
-  new Set<string>([notion.data.title, `IND-${notion.data.acronym}`])
-).filter((n) => n && n !== notion.data.acronym);
+const alternateNames = [notion.data.title].filter(
+  (n) => n && n !== notion.data.acronym
+);
 
 const breadcrumbs = [
   { name: 'Home', url: 'https://securitynotionszoo.com/' },
@@ -57,7 +57,7 @@ const pageTitle =
   title={pageTitle}
   description={notion.data.description}
   type="article"
-  keywords={[notion.data.acronym, `IND-${notion.data.acronym}`, notion.data.title, ...notion.data.tags, 'FHE', 'Fully Homomorphic Encryption', 'cryptography', 'security notion']}
+  keywords={[notion.data.acronym, notion.data.title, ...notion.data.tags, 'FHE', 'Fully Homomorphic Encryption', 'cryptography', 'security notion']}
   datePublished={datePublished}
   dateModified={dateModified}
   definedTerm={{ termCode: notion.data.acronym, alternateName: alternateNames }}
