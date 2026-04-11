@@ -1,0 +1,1351 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkMath from "remark-math";
+import remarkRehype from "remark-rehype";
+import rehypeMathjax from "rehype-mathjax";
+import rehypeStringify from "rehype-stringify";
+import layoutPositions from "../data/map-positions.json";
+
+const isDev = import.meta.env.DEV;
+
+const notions = await getCollection("notions");
+const transforms = await getCollection("transforms");
+
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkMath)
+  .use(remarkRehype)
+  .use(rehypeMathjax)
+  .use(rehypeStringify);
+const md = (input: string) => String(processor.processSync(input));
+
+// ---------- Validate ----------
+const byAcronym = Object.fromEntries(notions.map((n) => [n.data.acronym, n]));
+for (const t of transforms) {
+  for (const f of t.data.from) {
+    if (!byAcronym[f]) {
+      throw new Error(`Transform ${t.slug}: unknown from acronym '${f}'`);
+    }
+  }
+  if (!byAcronym[t.data.to]) {
+    throw new Error(
+      `Transform ${t.slug}: unknown to acronym '${t.data.to}'`,
+    );
+  }
+}
+
+// ---------- Build transform payloads ----------
+const transformList = transforms.map((t) => ({
+  id: t.slug,
+  name: t.data.name,
+  from: t.data.from,
+  to: t.data.to,
+  assumption: t.data.assumption ?? null,
+  category: t.data.category,
+  paper: t.data.paper ?? null,
+  tags: t.data.tags ?? [],
+  bodyHTML: md(t.body),
+}));
+
+// ---------- Notions that actually appear on the map ----------
+const usedAcronyms = new Set<string>();
+for (const t of transformList) {
+  t.from.forEach((f) => usedAcronyms.add(f));
+  usedAcronyms.add(t.to);
+}
+
+const mapNotions = [...usedAcronyms].map((a) => {
+  const n = byAcronym[a]!;
+  return {
+    acronym: a,
+    slug: n.slug,
+    title: n.data.title,
+    description: n.data.description,
+  };
+});
+
+// ---------- Rank within the filtered subset ----------
+// We compute ranks using ONLY the notions actually on the map. This keeps
+// the hierarchy compact (no 8-tall chains from nodes outside the subset)
+// while still respecting implication order: if a implies b and both are on
+// the map, a ends up higher than b.
+//
+// The full implication closure is used so that transitive relationships
+// between filtered notions are preserved even when intermediate notions
+// aren't on the map.
+const fullClosure: Record<string, Set<string>> = {};
+for (const n of notions) {
+  const seen = new Set<string>();
+  const stack = [...n.data.implies];
+  while (stack.length) {
+    const a = stack.pop()!;
+    if (seen.has(a)) continue;
+    seen.add(a);
+    const child = byAcronym[a];
+    if (child) stack.push(...child.data.implies);
+  }
+  fullClosure[n.data.acronym] = seen;
+}
+
+// Restrict closure to the filtered subset, then compute longest path to a
+// sink inside that subset.
+const filteredDescendants: Record<string, string[]> = {};
+for (const a of usedAcronyms) {
+  filteredDescendants[a] = [...(fullClosure[a] ?? [])].filter((b) =>
+    usedAcronyms.has(b),
+  );
+}
+
+const rankMemo: Record<string, number> = {};
+const computeRank = (a: string): number => {
+  if (rankMemo[a] !== undefined) return rankMemo[a];
+  const children = filteredDescendants[a] ?? [];
+  if (children.length === 0) return (rankMemo[a] = 0);
+  let best = 0;
+  for (const child of children) {
+    // Only count direct children whose rank is strictly less than the
+    // longest path (transitive reduction of filtered relation).
+    const r = computeRank(child) + 1;
+    if (r > best) best = r;
+  }
+  return (rankMemo[a] = best);
+};
+
+// Apply transitive reduction logic: a direct edge a -> b exists only if
+// there is no intermediate c on the map with a -> c -> b.
+for (const a of usedAcronyms) {
+  const all = filteredDescendants[a];
+  const direct = all.filter((b) => {
+    // Keep b iff no other c in all transitively reaches b via filtered edges
+    for (const c of all) {
+      if (c === b) continue;
+      if ((filteredDescendants[c] ?? []).includes(b)) return false;
+    }
+    return true;
+  });
+  filteredDescendants[a] = direct;
+}
+
+// Recompute ranks after reduction (they only get smaller or stay the same)
+for (const k of Object.keys(rankMemo)) delete rankMemo[k];
+const ranks: Record<string, number> = {};
+for (const a of usedAcronyms) ranks[a] = computeRank(a);
+
+// Canonical node positions live in src/data/map-positions.json. Entries may
+// be overridden by hand (see the dev-mode "Copy layout" button below) and
+// the algorithmic rank layout is only used as a fallback for acronyms that
+// don't appear in the JSON yet.
+const VIEW_W_BUILD = 1000;
+const VIEW_H_BUILD = 1200;
+const layoutMap = layoutPositions as Record<
+  string,
+  { x: number; y: number }
+>;
+
+// Fallback computation: layered layout by rank with deterministic jitter,
+// used only when a notion is missing from the static layout file.
+const hashStr = (s: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+};
+const jitterStr = (seed: string, amp: number) => {
+  const h = hashStr(seed);
+  return ((h % 2000) / 1000 - 1) * amp;
+};
+const maxRank = Math.max(0, ...Object.values(ranks));
+const byRank: Record<number, string[]> = {};
+for (const a of usedAcronyms) (byRank[ranks[a]] ||= []).push(a);
+for (const r of Object.keys(byRank)) byRank[Number(r)].sort();
+const paddingX_B = 90;
+const paddingY_B = 90;
+const rows_B = maxRank + 1;
+const rowSpan_B = rows_B > 1 ? (VIEW_H_BUILD - 2 * paddingY_B) / (rows_B - 1) : 0;
+const computedPositions: Record<string, { x: number; y: number }> = {};
+for (let r = 0; r <= maxRank; r++) {
+  const nodes = byRank[r] ?? [];
+  if (!nodes.length) continue;
+  const baseY = paddingY_B + (maxRank - r) * rowSpan_B;
+  if (nodes.length === 1) {
+    const a = nodes[0];
+    computedPositions[a] = {
+      x: VIEW_W_BUILD / 2 + jitterStr(a + "x", 40),
+      y: baseY + jitterStr(a + "y", 18),
+    };
+  } else {
+    const span = VIEW_W_BUILD - 2 * paddingX_B;
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
+      const x = paddingX_B + span * (i / (nodes.length - 1));
+      computedPositions[a] = {
+        x: x + jitterStr(a + "x", 36),
+        y: baseY + jitterStr(a + "y", 22),
+      };
+    }
+  }
+}
+
+const positions: Record<string, { x: number; y: number }> = {};
+for (const a of usedAcronyms) {
+  positions[a] = layoutMap[a] ?? computedPositions[a];
+}
+
+const mapData = {
+  notions: mapNotions,
+  transforms: transformList,
+  ranks,
+  positions,
+  isDev,
+};
+const mapJson = JSON.stringify(mapData).replace(/</g, "\\u003c");
+
+const categoryLegend: Array<{
+  category: string;
+  label: string;
+  color: string;
+  description: string;
+  dashed?: boolean;
+}> = [
+  {
+    category: "classical",
+    label: "Classical PKE",
+    color: "#0ea5e9",
+    description:
+      "Textbook transforms for public-key encryption (ROM, NIZK, ...).",
+  },
+  {
+    category: "fhe",
+    label: "FHE-specific",
+    color: "#8b5cf6",
+    description:
+      "Constructions built for homomorphic schemes, including noise flooding and SNARK wrappers.",
+  },
+  {
+    category: "private-key",
+    label: "Private-key",
+    color: "#14b8a6",
+    description:
+      "Verifier shares the secret key: uses signatures or MACs as witnesses.",
+  },
+  {
+    category: "non-falsifiable",
+    label: "Non-falsifiable assumption",
+    color: "#f59e0b",
+    description:
+      "Relies on knowledge-type assumptions like LOH or Knowledge-of-Exponent.",
+    dashed: true,
+  },
+];
+---
+
+<BaseLayout
+  title="Map | SecurityNotionsZoo"
+  description="The constructions map: known transforms that lift a scheme from one security notion to a stronger one, including Naor-Yung, Fujisaki-Okamoto, noise flooding, and the vCCA framework."
+>
+  <div class="mb-8">
+    <h1
+      class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-slate-100 mb-3 tracking-tight transition-colors"
+    >
+      Constructions map
+    </h1>
+    <p
+      class="text-lg text-slate-600 dark:text-slate-400 text-justify transition-colors"
+    >
+      Labelled routes between security notions. Each arrow is a published
+      transform that lifts a scheme from a weaker notion to a stronger one.
+      Tap a route to read what the transform does, what it assumes, and which
+      paper introduced it.
+    </p>
+  </div>
+
+  <!-- Legend -->
+  <div
+    class="mb-6 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-400 transition-colors"
+  >
+    {
+      categoryLegend.map((l) => (
+        <div class="inline-flex items-center gap-2" title={l.description}>
+          <svg width="28" height="10" class="shrink-0">
+            <line
+              x1="2"
+              y1="5"
+              x2="26"
+              y2="5"
+              stroke={l.color}
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-dasharray={l.dashed ? "5 4" : undefined}
+            />
+          </svg>
+          <span>{l.label}</span>
+        </div>
+      ))
+    }
+  </div>
+
+  <div
+    id="map-canvas"
+    class="relative w-full aspect-[5/6] bg-gradient-to-b from-sky-50/60 via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm overflow-hidden transition-colors touch-none select-none"
+  >
+    <!-- Zoom/pan controls -->
+    <div
+      class="absolute top-3 left-3 z-10 flex flex-col gap-1 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
+    >
+      <button
+        type="button"
+        id="map-zoom-in"
+        aria-label="Zoom in"
+        title="Zoom in"
+        class="w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><line x1="12" x2="12" y1="5" y2="19"></line><line
+            x1="5"
+            x2="19"
+            y1="12"
+            y2="12"></line></svg
+        >
+      </button>
+      <button
+        type="button"
+        id="map-zoom-out"
+        aria-label="Zoom out"
+        title="Zoom out"
+        class="w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-t border-slate-200 dark:border-slate-700 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line></svg
+        >
+      </button>
+      <button
+        type="button"
+        id="map-reset"
+        aria-label="Reset view"
+        title="Reset"
+        class="w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-t border-slate-200 dark:border-slate-700 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"
+          ></path></svg
+        >
+      </button>
+    </div>
+
+    {
+      isDev && (
+        <div
+          class="absolute top-3 right-3 z-10 flex flex-col gap-1 bg-amber-50/95 dark:bg-amber-900/40 backdrop-blur-sm rounded-xl border border-amber-200 dark:border-amber-600/40 shadow-sm overflow-hidden"
+        >
+          <button
+            type="button"
+            id="map-save-layout"
+            aria-label="Copy current layout as JSON"
+            title="Copy layout JSON to clipboard (dev only)"
+            class="flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            <span>Copy layout</span>
+          </button>
+        </div>
+      )
+    }
+
+    <div id="map-viewport" class="absolute inset-0 origin-top-left">
+      <svg
+        id="map-svg"
+        class="block absolute inset-0 w-full h-full text-slate-400 dark:text-slate-600"
+        viewBox="0 0 1000 1200"
+        preserveAspectRatio="xMidYMid meet"
+      >
+      <defs>
+        <pattern
+          id="map-topo"
+          x="0"
+          y="0"
+          width="180"
+          height="180"
+          patternUnits="userSpaceOnUse"
+        >
+          <circle
+            cx="90"
+            cy="90"
+            r="60"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="0.6"
+            opacity="0.18"></circle>
+          <circle
+            cx="90"
+            cy="90"
+            r="42"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="0.6"
+            opacity="0.14"></circle>
+          <circle
+            cx="90"
+            cy="90"
+            r="26"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="0.6"
+            opacity="0.1"></circle>
+        </pattern>
+        <marker
+          id="map-arrow-classical"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#0ea5e9"></path>
+        </marker>
+        <marker
+          id="map-arrow-fhe"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6"></path>
+        </marker>
+        <marker
+          id="map-arrow-private-key"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#14b8a6"></path>
+        </marker>
+        <marker
+          id="map-arrow-non-falsifiable"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"></path>
+        </marker>
+      </defs>
+      <!-- Oversized background rect so the topographic pattern still
+           covers the viewport after the user zooms out or pans far -->
+      <rect
+        x="-2000"
+        y="-2400"
+        width="5000"
+        height="6000"
+        fill="url(#map-topo)"
+      ></rect>
+      <g id="map-edges"></g>
+      <g id="map-edge-labels"></g>
+      </svg>
+      <div id="map-nodes" class="absolute inset-0 pointer-events-none"></div>
+    </div>
+  </div>
+
+  <p
+    class="mt-3 text-xs text-slate-500 dark:text-slate-400 text-center transition-colors"
+  >
+    Tap a labelled arrow or label for details. Scroll or use the + / -
+    buttons to zoom. Drag an empty area to pan.
+  </p>
+
+  <!-- Side panel -->
+  <div
+    id="map-panel"
+    class="fixed inset-0 z-[55]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="map-panel-title"
+    hidden
+  >
+    <div
+      id="map-panel-backdrop"
+      class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+    >
+    </div>
+    <div
+      id="map-panel-sheet"
+      class="absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 overflow-y-auto transform transition-transform duration-200 translate-x-full"
+    >
+      <div class="p-6 md:p-8">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div
+            id="map-panel-category"
+            class="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide font-semibold"
+          >
+          </div>
+          <button
+            type="button"
+            id="map-panel-close"
+            aria-label="Close details"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
+            >
+          </button>
+        </div>
+        <h2
+          id="map-panel-title"
+          class="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-3 tracking-tight transition-colors"
+        >
+        </h2>
+        <div
+          id="map-panel-route"
+          class="flex flex-wrap items-center gap-2 mb-4 text-sm transition-colors"
+        >
+        </div>
+        <div
+          id="map-panel-assumption"
+          class="mb-4 text-sm transition-colors"
+        >
+        </div>
+        <div
+          id="map-panel-paper"
+          class="mb-5 text-sm text-slate-600 dark:text-slate-400 transition-colors"
+        >
+        </div>
+        <div
+          id="map-panel-body"
+          class="prose prose-sm prose-slate dark:prose-invert max-w-none text-slate-700 dark:text-slate-200 transition-colors"
+        >
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="map-data" is:inline set:html={mapJson} />
+
+  <script>
+    interface MapNotion {
+      acronym: string;
+      slug: string;
+      title: string;
+      description: string;
+    }
+
+    interface MapTransform {
+      id: string;
+      name: string;
+      from: string[];
+      to: string;
+      assumption: string | null;
+      category: "classical" | "fhe" | "private-key" | "non-falsifiable";
+      paper: {
+        title?: string;
+        authors?: string[];
+        year?: number | null;
+        link?: string;
+      } | null;
+      tags: string[];
+      bodyHTML: string;
+    }
+
+    interface MapData {
+      notions: MapNotion[];
+      transforms: MapTransform[];
+      ranks: Record<string, number>;
+      positions: Record<string, { x: number; y: number }>;
+      isDev: boolean;
+    }
+
+    const CATEGORY_COLORS: Record<MapTransform["category"], string> = {
+      classical: "#0ea5e9",
+      fhe: "#8b5cf6",
+      "private-key": "#14b8a6",
+      "non-falsifiable": "#f59e0b",
+    };
+    const CATEGORY_MARKERS: Record<MapTransform["category"], string> = {
+      classical: "url(#map-arrow-classical)",
+      fhe: "url(#map-arrow-fhe)",
+      "private-key": "url(#map-arrow-private-key)",
+      "non-falsifiable": "url(#map-arrow-non-falsifiable)",
+    };
+    const CATEGORY_LABELS: Record<MapTransform["category"], string> = {
+      classical: "Classical PKE",
+      fhe: "FHE-specific",
+      "private-key": "Private-key",
+      "non-falsifiable": "Non-falsifiable assumption",
+    };
+
+    const VIEW_W = 1000;
+    const VIEW_H = 1200;
+    const NODE_W = 110;
+    const NODE_H = 60;
+
+    const initMap = () => {
+      const dataEl = document.getElementById("map-data");
+      if (!dataEl || !dataEl.textContent) return;
+      const data: MapData = JSON.parse(dataEl.textContent);
+
+      // ---------- Layout ----------
+      // Positions come from the server payload (src/data/map-positions.json).
+      // In dev mode they can be mutated via drag and saved back to the file
+      // via the "Copy layout" button. In production drag is disabled and
+      // the layout is fixed for every visitor.
+      const positions: Record<string, { x: number; y: number }> = {};
+      for (const n of data.notions) {
+        const p = data.positions[n.acronym];
+        if (p) {
+          positions[n.acronym] = { x: p.x, y: p.y };
+        }
+      }
+
+      // ---------- Node rendering ----------
+      const nodesContainer = document.getElementById(
+        "map-nodes",
+      ) as HTMLElement | null;
+      if (!nodesContainer) return;
+      nodesContainer.innerHTML = "";
+
+      // Map from acronym → button element (needed for drag updates)
+      const nodeEls: Record<string, HTMLAnchorElement> = {};
+
+      const updateNodeEl = (acronym: string) => {
+        const el = nodeEls[acronym];
+        const pos = positions[acronym];
+        if (!el || !pos) return;
+        const pctX = (pos.x / VIEW_W) * 100;
+        const pctY = (pos.y / VIEW_H) * 100;
+        const pctW = (NODE_W / VIEW_W) * 100;
+        const pctH = (NODE_H / VIEW_H) * 100;
+        el.style.left = `calc(${pctX}% - ${pctW / 2}%)`;
+        el.style.top = `calc(${pctY}% - ${pctH / 2}%)`;
+        el.style.width = `${pctW}%`;
+        el.style.height = `${pctH}%`;
+      };
+
+      for (const n of data.notions) {
+        const pos = positions[n.acronym];
+        if (!pos) continue;
+        const a = document.createElement("a");
+        a.href = `/notions/${n.slug}/`;
+        a.className =
+          "map-node pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border-2 border-slate-300 dark:border-slate-600 bg-white/95 dark:bg-slate-900/90 backdrop-blur-sm text-slate-900 dark:text-slate-100 shadow-md hover:shadow-lg hover:border-sky-500 dark:hover:border-accent transition-colors cursor-grab active:cursor-grabbing decoration-transparent no-underline px-2 touch-none";
+        a.dataset.acronym = n.acronym;
+        a.title = n.title;
+        a.innerHTML = `
+          <div class="text-sm sm:text-base font-bold leading-none">${escapeHtml(n.acronym)}</div>
+          <div class="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 text-center leading-tight">${escapeHtml(n.title)}</div>
+        `;
+        nodesContainer.appendChild(a);
+        nodeEls[n.acronym] = a;
+        updateNodeEl(n.acronym);
+      }
+
+      // ---------- Edge rendering ----------
+      const edgesGroup = document.getElementById(
+        "map-edges",
+      ) as unknown as SVGGElement | null;
+      const labelsGroup = document.getElementById(
+        "map-edge-labels",
+      ) as unknown as SVGGElement | null;
+      if (!edgesGroup || !labelsGroup) return;
+
+      // Group parallel transforms (same source → same target) so we can
+      // offset their curves + labels symmetrically.
+      const parallelGroups: Record<string, MapTransform[]> = {};
+      for (const t of data.transforms) {
+        const src = t.from[0];
+        const key = `${src}->${t.to}`;
+        (parallelGroups[key] ||= []).push(t);
+      }
+
+      const renderEdges = () => {
+        edgesGroup.innerHTML = "";
+        labelsGroup.innerHTML = "";
+        drawAllEdges();
+      };
+      const drawAllEdges = () => {
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+
+      // Evaluate a quadratic Bézier at parameter t in [0, 1]
+      const bezierAt = (
+        t: number,
+        p0: { x: number; y: number },
+        p1: { x: number; y: number },
+        p2: { x: number; y: number },
+      ) => {
+        const u = 1 - t;
+        return {
+          x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x,
+          y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y,
+        };
+      };
+
+      // Distance from a rectangle's center to the point where a ray in
+      // direction (nx, ny) exits the rectangle (halfW x halfH).
+      const hitRectEdge = (
+        nx: number,
+        ny: number,
+        halfW: number,
+        halfH: number,
+      ) => {
+        const ax = Math.abs(nx);
+        const ay = Math.abs(ny);
+        const hx = ax > 1e-6 ? halfW / ax : Infinity;
+        const hy = ay > 1e-6 ? halfH / ay : Infinity;
+        return Math.min(hx, hy);
+      };
+
+      for (const [key, group] of Object.entries(parallelGroups)) {
+        const groupSize = group.length;
+        group.forEach((t, gIdx) => {
+          const src = positions[t.from[0]];
+          const dst = positions[t.to];
+          if (!src || !dst) return;
+
+          const dx = dst.x - src.x;
+          const dy = dst.y - src.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const nx = dx / d;
+          const ny = dy / d;
+
+          // ---- Control point (curve shape) ----
+          // Uses the midpoint of the STRAIGHT line between the node
+          // centers, offset perpendicularly. Endpoint trimming happens
+          // afterward along the curve's actual tangent direction.
+          const straightMx = (src.x + dst.x) / 2;
+          const straightMy = (src.y + dst.y) / 2;
+          const perpX = -ny;
+          const perpY = nx;
+          const offsetUnit = 80;
+          const offsetStep =
+            groupSize === 1 ? 0 : (gIdx - (groupSize - 1) / 2) * offsetUnit;
+          const baseCurve = 30 + Math.abs(offsetStep) * 0.25;
+          const curveSign = offsetStep >= 0 ? 1 : -1;
+          // Flip curvature for classical-category (blue) edges so they bow
+          // the other way, making parallel routes from the same source less
+          // cluttered visually.
+          const categoryFlip = t.category === "classical" ? -1 : 1;
+          const cx =
+            straightMx +
+            perpX * (baseCurve * curveSign + offsetStep) * categoryFlip;
+          const cy =
+            straightMy +
+            perpY * (baseCurve * curveSign + offsetStep) * categoryFlip;
+
+          // ---- Endpoint trimming (tangent-based rect intersection) ----
+          // At P0, the curve's initial tangent points from src toward the
+          // control point. At P2, the final tangent points from the control
+          // point toward dst. We intersect these tangents with the node
+          // rectangles so the arrow body starts/ends just outside the box.
+          const srcHalfW = NODE_W / 2 + 6;
+          const srcHalfH = NODE_H / 2 + 6;
+          const dstHalfW = NODE_W / 2 + 10;
+          const dstHalfH = NODE_H / 2 + 10;
+
+          const tsx = cx - src.x;
+          const tsy = cy - src.y;
+          const tsd = Math.hypot(tsx, tsy) || 1;
+          const nsx = tsx / tsd;
+          const nsy = tsy / tsd;
+          const srcTrim = hitRectEdge(nsx, nsy, srcHalfW, srcHalfH);
+          const x1 = src.x + nsx * srcTrim;
+          const y1 = src.y + nsy * srcTrim;
+
+          const tdx = dst.x - cx;
+          const tdy = dst.y - cy;
+          const tdd = Math.hypot(tdx, tdy) || 1;
+          const ndx = tdx / tdd;
+          const ndy = tdy / tdd;
+          const dstTrim = hitRectEdge(ndx, ndy, dstHalfW, dstHalfH);
+          const x2 = dst.x - ndx * dstTrim;
+          const y2 = dst.y - ndy * dstTrim;
+
+          // For the label stagger below we need the visible midpoint.
+          const mx = (x1 + x2) / 2;
+          const my = (y1 + y2) / 2;
+
+          const color = CATEGORY_COLORS[t.category];
+          const marker = CATEGORY_MARKERS[t.category];
+          const dashed = t.category === "non-falsifiable";
+
+          // Stagger label along the curve so parallel labels don't pile up
+          // at t=0.5. For larger groups, spread between ~0.3 and ~0.7.
+          const labelT =
+            groupSize === 1
+              ? 0.5
+              : 0.5 + (gIdx - (groupSize - 1) / 2) * (0.34 / (groupSize - 1));
+          const labelPos = bezierAt(
+            labelT,
+            { x: x1, y: y1 },
+            { x: cx, y: cy },
+            { x: x2, y: y2 },
+          );
+
+          // A single <g> per edge holds the hit area, visible path, and
+          // label. We attach one click handler to the group so clicking
+          // anywhere on the arrow or label opens the side panel.
+          const group$g = document.createElementNS(SVG_NS, "g");
+          group$g.setAttribute("class", "map-edge-group");
+          group$g.style.cursor = "pointer";
+          group$g.dataset.transformId = t.id;
+          group$g.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openPanel(t);
+          });
+
+          // Hit area path (invisible wide stroke): keeps the arrow itself
+          // easy to tap.
+          const hit = document.createElementNS(SVG_NS, "path");
+          hit.setAttribute("d", `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+          hit.setAttribute("fill", "none");
+          hit.setAttribute("stroke", "transparent");
+          hit.setAttribute("stroke-width", "28");
+          hit.setAttribute("stroke-linecap", "round");
+          hit.setAttribute("pointer-events", "stroke");
+          group$g.appendChild(hit);
+
+          // Visible path
+          const path = document.createElementNS(SVG_NS, "path");
+          path.setAttribute("d", `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", color);
+          path.setAttribute("stroke-width", "3");
+          path.setAttribute("stroke-linecap", "round");
+          path.setAttribute("marker-end", marker);
+          path.setAttribute("pointer-events", "none");
+          if (dashed) path.setAttribute("stroke-dasharray", "8 5");
+          group$g.appendChild(path);
+
+          edgesGroup.appendChild(group$g);
+
+          // Label group: background rect + text. Append the group to the
+          // DOM BEFORE measuring the text, otherwise getBBox() returns zero
+          // on a detached element and the background box never gets drawn.
+          const labelG = document.createElementNS(SVG_NS, "g");
+          labelG.setAttribute("class", "map-edge-label");
+          labelG.style.cursor = "pointer";
+          labelG.dataset.transformId = t.id;
+          labelG.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openPanel(t);
+          });
+          labelsGroup.appendChild(labelG);
+
+          const labelText = document.createElementNS(SVG_NS, "text");
+          labelText.setAttribute("x", String(labelPos.x));
+          labelText.setAttribute("y", String(labelPos.y + 4));
+          labelText.setAttribute("text-anchor", "middle");
+          labelText.setAttribute("font-size", "16");
+          labelText.setAttribute("font-weight", "600");
+          labelText.setAttribute("fill", color);
+          labelText.setAttribute("pointer-events", "none");
+          labelText.textContent = t.name;
+          labelG.appendChild(labelText);
+
+          // Background rect sized to the measured text. getBBox() now works
+          // because labelText is in the live DOM.
+          try {
+            const bbox = labelText.getBBox();
+            const rect = document.createElementNS(SVG_NS, "rect");
+            rect.setAttribute("x", String(bbox.x - 8));
+            rect.setAttribute("y", String(bbox.y - 4));
+            rect.setAttribute("width", String(bbox.width + 16));
+            rect.setAttribute("height", String(bbox.height + 8));
+            rect.setAttribute("rx", "6");
+            rect.setAttribute("fill", "var(--map-label-bg, white)");
+            rect.setAttribute("stroke", color);
+            rect.setAttribute("stroke-width", "1.5");
+            rect.setAttribute("pointer-events", "all");
+            labelG.insertBefore(rect, labelText);
+          } catch {}
+        });
+      }
+      }; // end drawAllEdges
+
+      // Throttle edge re-renders via rAF during drag so we don't thrash the DOM
+      let edgeRenderPending = false;
+      const scheduleEdgeRender = () => {
+        if (edgeRenderPending) return;
+        edgeRenderPending = true;
+        requestAnimationFrame(() => {
+          edgeRenderPending = false;
+          renderEdges();
+        });
+      };
+
+      // Initial edge render
+      renderEdges();
+
+      // ---------- Node drag ----------
+      const canvas = document.getElementById("map-canvas") as HTMLElement | null;
+      const viewport = document.getElementById(
+        "map-viewport",
+      ) as HTMLElement | null;
+      if (!canvas || !viewport) return;
+
+      // Viewport state: zoom + pan (applied as a CSS transform to #map-viewport)
+      let zoom = 1;
+      let tx = 0;
+      let ty = 0;
+      const MIN_ZOOM = 0.4;
+      const MAX_ZOOM = 3;
+      const applyViewport = () => {
+        viewport.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
+      };
+      applyViewport();
+
+      // Convert a screen-pixel delta to a viewBox-user-unit delta, accounting
+      // for the current canvas size and zoom level.
+      const pxDeltaToUser = (dxPx: number, dyPx: number) => {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return { dx: 0, dy: 0 };
+        return {
+          dx: (dxPx / (rect.width * zoom)) * VIEW_W,
+          dy: (dyPx / (rect.height * zoom)) * VIEW_H,
+        };
+      };
+
+      interface NodeDragState {
+        acronym: string;
+        pointerId: number;
+        el: HTMLAnchorElement;
+        startClientX: number;
+        startClientY: number;
+        startNodeX: number;
+        startNodeY: number;
+        moved: boolean;
+      }
+      let nodeDrag: NodeDragState | null = null;
+      const DRAG_THRESHOLD_PX = 6;
+
+      const attachNodeDrag = (el: HTMLAnchorElement, acronym: string) => {
+        el.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            el.setPointerCapture(e.pointerId);
+          } catch {}
+          nodeDrag = {
+            acronym,
+            pointerId: e.pointerId,
+            el,
+            startClientX: e.clientX,
+            startClientY: e.clientY,
+            startNodeX: positions[acronym].x,
+            startNodeY: positions[acronym].y,
+            moved: false,
+          };
+        });
+        el.addEventListener("pointermove", (e) => {
+          if (
+            !nodeDrag ||
+            nodeDrag.acronym !== acronym ||
+            nodeDrag.pointerId !== e.pointerId
+          )
+            return;
+          const dxPx = e.clientX - nodeDrag.startClientX;
+          const dyPx = e.clientY - nodeDrag.startClientY;
+          if (
+            !nodeDrag.moved &&
+            Math.hypot(dxPx, dyPx) > DRAG_THRESHOLD_PX
+          ) {
+            nodeDrag.moved = true;
+          }
+          if (nodeDrag.moved) {
+            const { dx, dy } = pxDeltaToUser(dxPx, dyPx);
+            const newX = Math.max(
+              60,
+              Math.min(VIEW_W - 60, nodeDrag.startNodeX + dx),
+            );
+            const newY = Math.max(
+              40,
+              Math.min(VIEW_H - 40, nodeDrag.startNodeY + dy),
+            );
+            positions[acronym] = { x: newX, y: newY };
+            updateNodeEl(acronym);
+            scheduleEdgeRender();
+          }
+        });
+        const endDrag = (e: PointerEvent) => {
+          if (
+            !nodeDrag ||
+            nodeDrag.acronym !== acronym ||
+            nodeDrag.pointerId !== e.pointerId
+          )
+            return;
+          try {
+            el.releasePointerCapture(e.pointerId);
+          } catch {}
+          const wasDrag = nodeDrag.moved;
+          nodeDrag = null;
+          if (wasDrag) {
+            // Suppress the upcoming click so the browser doesn't navigate
+            // to the notion page.
+            e.preventDefault();
+            el.addEventListener(
+              "click",
+              (clickEvent) => {
+                clickEvent.preventDefault();
+                clickEvent.stopPropagation();
+              },
+              { once: true, capture: true },
+            );
+          }
+        };
+        el.addEventListener("pointerup", endDrag);
+        el.addEventListener("pointercancel", endDrag);
+      };
+
+      if (data.isDev) {
+        for (const [acronym, el] of Object.entries(nodeEls)) {
+          attachNodeDrag(el, acronym);
+        }
+      }
+
+      // ---------- Canvas pan ----------
+      interface PanState {
+        pointerId: number;
+        startClientX: number;
+        startClientY: number;
+        startTx: number;
+        startTy: number;
+        moved: boolean;
+      }
+      let panState: PanState | null = null;
+
+      canvas.addEventListener("pointerdown", (e) => {
+        // Only initiate a pan on pointerdowns directly on the canvas (not
+        // on a node, edge, label, or any control button). If a node's
+        // pointerdown already ran, nodeDrag is set and we bail.
+        if (nodeDrag) return;
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        // Any clickable child of the canvas that we don't want pan to
+        // swallow should match one of these selectors.
+        if (target.closest(".map-node")) return;
+        if (target.closest(".map-edge-group")) return;
+        if (target.closest(".map-edge-label")) return;
+        if (target.closest("button")) return;
+        if (target.closest("a")) return;
+        e.preventDefault();
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch {}
+        panState = {
+          pointerId: e.pointerId,
+          startClientX: e.clientX,
+          startClientY: e.clientY,
+          startTx: tx,
+          startTy: ty,
+          moved: false,
+        };
+        canvas.style.cursor = "grabbing";
+      });
+
+      canvas.addEventListener("pointermove", (e) => {
+        if (!panState || panState.pointerId !== e.pointerId) return;
+        const dxPx = e.clientX - panState.startClientX;
+        const dyPx = e.clientY - panState.startClientY;
+        if (!panState.moved && Math.hypot(dxPx, dyPx) > 3) {
+          panState.moved = true;
+        }
+        tx = panState.startTx + dxPx;
+        ty = panState.startTy + dyPx;
+        applyViewport();
+      });
+
+      const endPan = (e: PointerEvent) => {
+        if (!panState || panState.pointerId !== e.pointerId) return;
+        try {
+          canvas.releasePointerCapture(e.pointerId);
+        } catch {}
+        panState = null;
+        canvas.style.cursor = "";
+      };
+      canvas.addEventListener("pointerup", endPan);
+      canvas.addEventListener("pointercancel", endPan);
+
+      // ---------- Wheel zoom (zoom around cursor) ----------
+      canvas.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const rect = canvas.getBoundingClientRect();
+          const cx = e.clientX - rect.left;
+          const cy = e.clientY - rect.top;
+          // Pre-zoom position under the cursor
+          const preX = (cx - tx) / zoom;
+          const preY = (cy - ty) / zoom;
+          const factor = Math.exp(-e.deltaY * 0.0016);
+          const newZoom = Math.max(
+            MIN_ZOOM,
+            Math.min(MAX_ZOOM, zoom * factor),
+          );
+          // Keep the cursor anchored to the same point in pre-zoom space
+          tx = cx - preX * newZoom;
+          ty = cy - preY * newZoom;
+          zoom = newZoom;
+          applyViewport();
+        },
+        { passive: false },
+      );
+
+      // ---------- Zoom controls ----------
+      const zoomByFactor = (factor: number) => {
+        const rect = canvas.getBoundingClientRect();
+        // Zoom around canvas center
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const preX = (cx - tx) / zoom;
+        const preY = (cy - ty) / zoom;
+        const newZoom = Math.max(
+          MIN_ZOOM,
+          Math.min(MAX_ZOOM, zoom * factor),
+        );
+        tx = cx - preX * newZoom;
+        ty = cy - preY * newZoom;
+        zoom = newZoom;
+        applyViewport();
+      };
+      document
+        .getElementById("map-zoom-in")
+        ?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          zoomByFactor(1.25);
+        });
+      document
+        .getElementById("map-zoom-out")
+        ?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          zoomByFactor(1 / 1.25);
+        });
+      document.getElementById("map-reset")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        zoom = 1;
+        tx = 0;
+        ty = 0;
+        applyViewport();
+      });
+
+      // ---------- Dev-only: copy layout JSON to clipboard ----------
+      if (data.isDev) {
+        const saveBtn = document.getElementById(
+          "map-save-layout",
+        ) as HTMLButtonElement | null;
+        saveBtn?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          // Emit positions sorted by rank (top to bottom) for readable diffs.
+          const sortedEntries = Object.entries(positions).sort((a, b) => {
+            const ra = data.ranks[a[0]] ?? 0;
+            const rb = data.ranks[b[0]] ?? 0;
+            if (ra !== rb) return rb - ra;
+            return a[0].localeCompare(b[0]);
+          });
+          const obj: Record<string, { x: number; y: number }> = {};
+          for (const [k, v] of sortedEntries) {
+            obj[k] = {
+              x: Math.round(v.x * 10) / 10,
+              y: Math.round(v.y * 10) / 10,
+            };
+          }
+          const json = JSON.stringify(obj, null, 2);
+          const label = saveBtn.querySelector("span");
+          const originalLabel = label?.textContent ?? "Copy layout";
+          try {
+            await navigator.clipboard.writeText(json);
+            if (label) label.textContent = "Copied!";
+          } catch {
+            // Fallback: dump to the console so the maintainer can grab it
+            console.log("[map layout]", json);
+            if (label) label.textContent = "See console";
+          }
+          setTimeout(() => {
+            if (label) label.textContent = originalLabel;
+          }, 1800);
+        });
+      }
+
+      // ---------- Panel ----------
+      const panel = document.getElementById("map-panel") as HTMLElement | null;
+      const backdrop = document.getElementById(
+        "map-panel-backdrop",
+      ) as HTMLElement | null;
+      const sheet = document.getElementById(
+        "map-panel-sheet",
+      ) as HTMLElement | null;
+      const closeBtn = document.getElementById(
+        "map-panel-close",
+      ) as HTMLButtonElement | null;
+
+      const openPanel = (t: MapTransform) => {
+        if (!panel || !sheet) return;
+        const catEl = document.getElementById("map-panel-category");
+        const titleEl = document.getElementById("map-panel-title");
+        const routeEl = document.getElementById("map-panel-route");
+        const assumpEl = document.getElementById("map-panel-assumption");
+        const paperEl = document.getElementById("map-panel-paper");
+        const bodyEl = document.getElementById("map-panel-body");
+
+        if (catEl) {
+          catEl.innerHTML = `
+            <span class="w-2.5 h-2.5 rounded-full" style="background:${CATEGORY_COLORS[t.category]}"></span>
+            ${escapeHtml(CATEGORY_LABELS[t.category])}
+          `;
+          catEl.style.color = CATEGORY_COLORS[t.category];
+        }
+        if (titleEl) titleEl.textContent = t.name;
+        if (routeEl) {
+          const fromTags = t.from
+            .map((f) => notionBadge(f))
+            .join(
+              '<span class="text-slate-400 dark:text-slate-600">+</span>',
+            );
+          routeEl.innerHTML = `
+            <div class="flex flex-wrap items-center gap-2">
+              ${fromTags}
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 dark:text-slate-500"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            ${notionBadge(t.to)}
+          `;
+        }
+        if (assumpEl) {
+          if (t.assumption) {
+            assumpEl.innerHTML = `<span class="text-slate-500 dark:text-slate-400">Assumption:</span> <span class="font-medium text-slate-800 dark:text-slate-200">${escapeHtml(t.assumption)}</span>`;
+          } else {
+            assumpEl.innerHTML = "";
+          }
+        }
+        if (paperEl) {
+          if (t.paper) {
+            const authors = (t.paper.authors || []).join(", ");
+            const year = t.paper.year ?? "";
+            const title = t.paper.title ? `&ldquo;${escapeHtml(t.paper.title)}&rdquo;` : "";
+            const link = t.paper.link
+              ? `<a href="${escapeHtml(t.paper.link)}" target="_blank" rel="noopener" class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 decoration-transparent transition-colors">link</a>`
+              : "";
+            paperEl.innerHTML = [
+              authors ? escapeHtml(authors) : "",
+              year ? `(${year})` : "",
+              title,
+              link ? ` &mdash; ${link}` : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+          } else {
+            paperEl.innerHTML = "";
+          }
+        }
+        if (bodyEl) bodyEl.innerHTML = t.bodyHTML;
+
+        panel.hidden = false;
+        document.body.style.overflow = "hidden";
+        requestAnimationFrame(() => {
+          sheet.classList.remove("translate-x-full");
+        });
+      };
+
+      const closePanel = () => {
+        if (!panel || !sheet) return;
+        sheet.classList.add("translate-x-full");
+        setTimeout(() => {
+          panel.hidden = true;
+          document.body.style.overflow = "";
+        }, 200);
+      };
+
+      const notionBadge = (acronym: string) => {
+        const n = data.notions.find((x) => x.acronym === acronym);
+        const slug = n?.slug;
+        const href = slug ? `/notions/${slug}/` : "#";
+        return `<a href="${href}" class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/70 text-slate-800 dark:text-slate-200 decoration-transparent hover:border-sky-500 dark:hover:border-accent transition-colors">${escapeHtml(acronym)}</a>`;
+      };
+
+      closeBtn?.addEventListener("click", closePanel);
+      backdrop?.addEventListener("click", closePanel);
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && panel && !panel.hidden) closePanel();
+      });
+    };
+
+    const escapeHtml = (s: string) =>
+      s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initMap);
+    } else {
+      initMap();
+    }
+  </script>
+
+  <style>
+    :root {
+      --map-label-bg: rgb(255 255 255 / 0.92);
+    }
+    :global(.dark) {
+      --map-label-bg: rgb(15 23 42 / 0.92);
+    }
+  </style>
+</BaseLayout>

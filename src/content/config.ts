@@ -35,7 +35,26 @@ const quizCollection = defineCollection({
   }),
 });
 
+const transformsCollection = defineCollection({
+  type: 'content',
+  schema: z.object({
+    name: z.string(),
+    from: z.array(z.string()).min(1),
+    to: z.string(),
+    assumption: z.string().optional(),
+    category: z.enum(['classical', 'fhe', 'private-key', 'non-falsifiable']).default('classical'),
+    paper: z.object({
+      title: z.string().optional(),
+      authors: z.array(z.string()).optional().default([]),
+      year: z.number().nullable().optional(),
+      link: z.union([z.string().url(), z.literal('')]).optional(),
+    }).optional(),
+    tags: z.array(z.string()).optional().default([]),
+  }),
+});
+
 export const collections = {
   notions: notionsCollection,
   quiz: quizCollection,
+  transforms: transformsCollection,
 };

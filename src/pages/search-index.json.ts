@@ -4,7 +4,7 @@ import rawPrimer from "../content/primer.mdx?raw";
 import rawFlavors from "../content/flavors.mdx?raw";
 
 export interface SearchDoc {
-  type: "notion" | "primer" | "flavors" | "page";
+  type: "notion" | "primer" | "flavors" | "transform" | "page";
   id: string;
   url: string;
   title: string;
@@ -118,6 +118,25 @@ export const GET: APIRoute = async () => {
     });
   }
 
+  // ---- Transforms (all land on /map/; the side panel displays them) ----
+  const transforms = await getCollection("transforms");
+  for (const t of transforms) {
+    const routeLabel = `${t.data.from.join(" + ")} \u2192 ${t.data.to}`;
+    docs.push({
+      type: "transform",
+      id: `transform:${t.slug}`,
+      url: "/map/",
+      title: t.data.name,
+      subtitle: routeLabel,
+      snippet:
+        t.data.assumption
+          ? `${routeLabel}. Assumption: ${t.data.assumption}.`
+          : routeLabel,
+      body: stripMarkdown(t.body),
+      tags: ["transform", t.data.category, ...(t.data.tags ?? [])],
+    });
+  }
+
   // ---- Top-level pages ----
   docs.push({
     type: "page",
@@ -173,6 +192,17 @@ export const GET: APIRoute = async () => {
       "Complete dictionary of every cryptographic security game and definition cataloged.",
     body: "all notions full list complete detailed",
     tags: ["directory"],
+  });
+  docs.push({
+    type: "page",
+    id: "page:map",
+    url: "/map/",
+    title: "Constructions map",
+    subtitle: "Transforms between notions",
+    snippet:
+      "A map of the known transforms that lift schemes from one security notion to another: Naor-Yung, Fujisaki-Okamoto, noise flooding, the vCCA framework, and more.",
+    body: "map constructions transforms naor-yung fujisaki-okamoto noise flooding vcca framework routes",
+    tags: ["map"],
   });
 
   return new Response(JSON.stringify({ docs }), {

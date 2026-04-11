@@ -1,0 +1,17 @@
+---
+name: "FHE + SNARG"
+from: ["CPA"]
+to: "SA"
+assumption: "Sound SNARG for correct evaluation"
+category: "fhe"
+paper:
+  title: "What Have SNARGs Ever Done for FHE?"
+  authors: ["Michael Walter"]
+  year: 2024
+  link: "https://eprint.iacr.org/2024/1207"
+tags: ["snarg", "client-authoritative"]
+---
+
+Walter's baseline answer to "does a SNARG for correct evaluation actually buy any input privacy on top of the IND-CPA FHE it wraps?". Starting from an IND-CPA secure FHE scheme $\mathcal{E}$ for a function family $\mathcal{F}$, and a sound SNARG $\Pi$ for the relation $\mathcal{R} = \{(p, c, f, c_1, \ldots, c_\ell) \mid c = \mathcal{E}.\mathsf{Eval}(p, f, c_1, \ldots, c_\ell)\}$, define $\mathcal{E}'$ by having $\mathcal{E}'.\mathsf{Eval}$ output $(c, \pi)$ with $\pi \leftarrow \Pi.\mathsf{Prove}$, and by having $\mathcal{E}'.\mathsf{Dec}$ reject whenever $\Pi.\mathsf{Verify}$ rejects. Lemma 6 of the paper then shows that $\mathcal{E}'$ is IND-SA secure.
+
+The headline advantage over the vCCA blueprints of Manulis and Nguyen is that only ordinary SNARG **soundness** is required: no simulation-extractability, no straightline extraction, no non-black-box properties. This matches the client-authoritative setting that SA is tailored to, where the client already knows the input ciphertexts and the function to evaluate and therefore does not need an extractor to recover them. The construction does not reach vCCA, CCA1, or CCA1.5, all of which lie on incomparable axes to SA in Walter's hierarchy.

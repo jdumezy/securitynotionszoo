@@ -60,6 +60,7 @@ vCCAD subsumes both. Furthermore, unlike vCCA where single and multiple challeng
 
 Brzuska et al. showed that several of the construction blueprints from Manulis and Nguyen can be adapted to achieve vCCAD security, provided the underlying FHE is CPAD-secure (or sCPAD-secure in the public-key case) rather than merely CPA-secure.
 The Encrypt-then-Sign blueprint (private key) achieves vCCAD from a CPAD-secure FHE, a SUF-CMA signature scheme, and a straightline-extractable SNARK.
+The lighter Encrypt-then-MAC variant can be upgraded in the same way in the private-key setting, with the same compactness and input-privacy tradeoff as in the original vCCA construction.
 The CCA2-Companion-Ciphertext blueprint (public key, designated verifier) achieves vCCAD from an sCPAD-secure FHE, a CCA2-secure companion scheme, and a straightline-extractable SNARK.
 
 For the public-key, public-verifier setting, the Naor-Yung-based blueprint from Manulis and Nguyen cannot be used when perfect correctness does not hold.

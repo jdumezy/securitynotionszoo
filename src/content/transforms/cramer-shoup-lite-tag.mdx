@@ -1,0 +1,17 @@
+---
+name: "One-bit honesty tag"
+from: ["CCA1"]
+to: "CCA1.5"
+assumption: "Group-homomorphic structure"
+category: "classical"
+paper:
+  title: "Indistinguishability against Chosen Ciphertext Verification Attack Revisited: The Complete Picture"
+  authors: ["Angsuman Das", "Sabyasachi Dutta", "Avishek Adhikari"]
+  year: 2013
+  link: "https://link.springer.com/chapter/10.1007/978-3-642-41227-1_6"
+tags: ["group-homomorphic", "tag"]
+---
+
+Starting from the generic group-homomorphic framework of Armknecht, Katzenbeisser and Peter (DCC 2012), which already yields IND-CCA1-secure instantiations of Paillier and Goldwasser-Micali under the Splitting Oracle-Assisted Subgroup Membership (SOAP) assumption, Das, Dutta and Adhikari (ProvSec 2013) show that **prepending a one-bit tag marking a ciphertext as "honestly generated"** upgrades any such IND-CCA1-secure group-homomorphic scheme into an IND-CCA1.5-secure one while preserving the group-homomorphic structure.
+
+The tag lets the post-challenge ciphertext verification oracle reliably distinguish honestly produced ciphertexts from adversarially mauled ones without revealing any plaintext information. At the time of publication, this was the strongest security level known to be achievable by any group-homomorphic cryptosystem. Das, Dutta and Adhikari additionally show, as a separate construction, that Cramer-Shoup Lite (already known to be IND-CCA1 and IND-CCVA2 secure under DDH) is directly IND-CCA1.5 secure without needing the tag, and use it as the separation witness for IND-CCA1.5 not implying IND-CCA2.

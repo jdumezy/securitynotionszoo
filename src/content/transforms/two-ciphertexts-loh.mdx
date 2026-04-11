@@ -1,0 +1,17 @@
+---
+name: "Two-ciphertexts Paillier under LOH"
+from: ["CPA"]
+to: "vCCA"
+assumption: "Linear-Only Homomorphism (non-falsifiable)"
+category: "non-falsifiable"
+paper:
+  title: "Achieving \"beyond CCA1\" security for linearly homomorphic encryption, without SNARKs?"
+  authors: ["Marina Checri", "Pierre-Emmanuel Clet", "Marc Renard", "Renaud Sirdey"]
+  year: 2025
+  link: "https://eprint.iacr.org/2025/894"
+tags: ["paillier", "loh", "linearly-homomorphic"]
+---
+
+A SNARK-free vCCA construction $P^{(2)}$ for the additively homomorphic Paillier cryptosystem, proved secure by Checri, Clet, Renard, and Sirdey (ePrint 2025/894). The encryption of a message $m$ is a pair of Paillier ciphertexts $(\mathsf{Enc}(m), \mathsf{Enc}(\alpha \cdot m))$ under the same key material for a secret random $\alpha$, together with an image-verification algorithm that decrypts both halves and checks the linear relation; an inconsistent pair decrypts to $\bot$ and is rejected by the vCCA decryption oracle. The "two-ciphertexts" template itself goes back to Bitansky, Chiesa, Ishai, Ostrovsky, and Paneth (TCC 2013) and Gennaro, Gentry, Parno, and Raykova (Eurocrypt 2013) in the context of succinct arguments of knowledge.
+
+The security proof relies on the **Linear-Only Homomorphism (LOH)** assumption of Bitansky et al.: any adversary that produces a valid pair of ciphertexts passing the linear consistency check must know a linear combination of previously seen pairs that explains the output, and an extractor recovers that combination from the adversary's code and auxiliary input. LOH is a non-falsifiable knowledge-type assumption in the same family as Knowledge-of-Exponent, which lets the construction bypass SNARK machinery at the cost of a stronger algebraic assumption; it only applies to linearly homomorphic schemes such as Paillier and does not extend to full leveled FHE.

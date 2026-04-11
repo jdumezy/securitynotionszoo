@@ -1,0 +1,17 @@
+---
+name: "Encrypt-then-Sign"
+from: ["CPA"]
+to: "vCCA"
+assumption: "CPA-secure FHE + SUF-CMA signature + black-box weak SE SNARK"
+category: "private-key"
+paper:
+  title: "Fully Homomorphic Encryption beyond IND-CCA1 Security: Integrity through Verifiability"
+  authors: ["Mark Manulis", "Jérôme Nguyen"]
+  year: 2024
+  link: "https://eprint.iacr.org/2024/202"
+tags: ["signatures", "verifiable-fhe"]
+---
+
+Manulis and Nguyen obtain a private-key, publicly verifiable **vCCA** blueprint by first wrapping a CPA-secure FHE scheme in a signature-based CCA2-style embedding and then attaching a SNARK to evaluated ciphertexts. Each fresh ciphertext is signed, and each evaluated ciphertext carries a proof that it was produced by honest homomorphic evaluation from valid inputs.
+
+At decryption time, fresh ciphertexts are accepted only if the signature verifies, while evaluated ciphertexts are accepted only if the SNARK verifies. The witness extractor of the SNARK supplies the input list used by the vCCA filter, so post-challenge decryptions are rejected whenever the queried ciphertext is a byproduct of the challenge.

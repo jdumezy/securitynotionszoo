@@ -28,11 +28,11 @@ const SKIP_TAGS = new Set([
   "mjx-container",
 ]);
 
-const APPLY_MATCHERS = [
-  /content[/\\]notions[/\\]/,
-  /content[/\\]primer\.mdx$/,
-  /content[/\\]flavors\.mdx$/,
-];
+// Auto-linking only runs on notion pages. Primer and flavors are the
+// definitional pages themselves: turning their prose into a forest of
+// inline links adds visual noise without benefit (the reader landed there
+// to read the definitions, not to click through to notions).
+const APPLY_MATCHERS = [/content[/\\]notions[/\\]/];
 
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

@@ -1,0 +1,17 @@
+---
+name: "CCA2-Companion ciphertext"
+from: ["sCPAD"]
+to: "vCCAD"
+assumption: "sCPAD-secure FHE + CCA2-secure companion PKE + straightline-extractable SNARK"
+category: "fhe"
+paper:
+  title: "Relations among new CCA security notions for approximate FHE"
+  authors: ["Chris Brzuska", "Sébastien Canard", "Caroline Fontaine", "Duong Hieu Phan", "David Pointcheval", "Marc Renard", "Renaud Sirdey"]
+  year: 2025
+  link: "https://eprint.iacr.org/2024/812"
+tags: ["designated-verifier", "companion", "snark"]
+---
+
+Brzuska et al. show that the public-key designated-verifier CCA2-Companion-Ciphertext blueprint from Manulis and Nguyen extends from the original **CPA-to-vCCA** setting to an **sCPAD-to-vCCAD** construction. Each fresh FHE ciphertext is paired with a **CCA2-encrypted copy of the plaintext together with the FHE encryption randomness** under a separate non-homomorphic scheme; this companion ciphertext acts as a designated-verifier proof that the fresh FHE ciphertext is well formed. Evaluated ciphertexts additionally carry a SNARK for correct homomorphic derivation from previously verified inputs.
+
+The designated verifier uses the companion secret key to recover $(m, r)$, re-encrypts honestly, and checks that the FHE ciphertext really equals `Enc(pk, m; r)`. In the general approximate-FHE setting, the underlying base scheme must be **sCPAD-secure**, because the reduction needs adversarially chosen randomness for fresh ciphertexts that are inserted into the challenger state. The companion scheme supplies the fresh-ciphertext extractor, while straightline extraction from the evaluation SNARK supplies the witness needed by the vCCAD decryption filter.
