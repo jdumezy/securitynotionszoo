@@ -92,46 +92,57 @@ const customQuestionCount = quizItems.length;
       </article>
     </a>
 
-    <article
-      class="h-full bg-white/60 dark:bg-slate-800/10 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 opacity-70"
+    <a
+      href="/games/reorder/"
+      class="block group no-underline decoration-transparent"
     >
-      <div class="flex items-start justify-between mb-4">
-        <div
-          class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"
-            ></circle><circle cx="12" cy="18" r="3"></circle><path
-              d="M6 9v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9"></path><path
-              d="M12 12v3"></path></svg
+      <article
+        class="h-full bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 hover:border-slate-400 dark:hover:border-slate-500 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:shadow-lg hover:-translate-y-1"
+      >
+        <div class="flex items-start justify-between mb-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-sky-100 dark:bg-accent/10 flex items-center justify-center text-sky-600 dark:text-accent transition-colors"
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"
+              ></circle><circle cx="12" cy="18" r="3"></circle><path
+                d="M6 9v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9"></path><path
+                d="M12 12v3"></path></svg
+            >
+          </div>
+          <span
+            class="px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200 dark:border-emerald-500/20 transition-colors"
+          >
+            Available
+          </span>
         </div>
-        <span
-          class="px-2 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 rounded border border-slate-200 dark:border-slate-700/50 transition-colors"
+        <h2
+          class="text-2xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-accent mb-2 transition-colors"
         >
-          Coming soon
-        </span>
-      </div>
-      <h2
-        class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2 transition-colors"
-      >
-        Reorder the graph
-      </h2>
-      <p
-        class="text-sm text-slate-600 dark:text-slate-300 transition-colors"
-      >
-        Arrange security notions by strength and recreate the implication graph
-        from scratch.
-      </p>
-    </article>
+          Recreate the graph
+        </h2>
+        <p
+          class="text-sm text-slate-600 dark:text-slate-300 mb-4 transition-colors"
+        >
+          Draw every implication arrow between security notions from scratch.
+          Three difficulty levels, from the classic CPA/CCA ladder to the full
+          FHE taxonomy.
+        </p>
+        <div
+          class="text-sm font-medium text-sky-600 dark:text-accent group-hover:underline transition-colors"
+        >
+          Start playing &rarr;
+        </div>
+      </article>
+    </a>
   </div>
 </BaseLayout>

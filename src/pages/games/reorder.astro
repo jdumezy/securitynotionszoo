@@ -1,0 +1,1137 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const notions = await getCollection("notions");
+
+type Notion = (typeof notions)[number];
+const byAcronym: Record<string, Notion> = Object.fromEntries(
+  notions.map((n) => [n.data.acronym, n]),
+);
+
+// Transitive closure of the full implies graph, keyed by acronym
+const closure: Record<string, Set<string>> = {};
+for (const n of notions) {
+  const seen = new Set<string>();
+  const stack = [...n.data.implies];
+  while (stack.length) {
+    const a = stack.pop()!;
+    if (seen.has(a)) continue;
+    seen.add(a);
+    const child = byAcronym[a];
+    if (child) stack.push(...child.data.implies);
+  }
+  closure[n.data.acronym] = seen;
+}
+
+// Compute the ground-truth edges for a filtered acronym set:
+// transitive reduction of (full closure ∩ filtered²)
+function edgesForSubset(acronyms: string[]): [string, string][] {
+  const filtered = new Set(acronyms);
+
+  // Restricted closure: what each filtered notion implies within the filter
+  const restricted: Record<string, Set<string>> = {};
+  for (const a of acronyms) {
+    restricted[a] = new Set(
+      [...(closure[a] ?? [])].filter((b) => filtered.has(b)),
+    );
+  }
+
+  // Transitive reduction: edge a→b iff b ∈ restricted[a] AND
+  // there is no c ∈ acronyms with a→c→b in the restricted graph
+  const edges: [string, string][] = [];
+  for (const a of acronyms) {
+    for (const b of restricted[a]) {
+      let redundant = false;
+      for (const c of acronyms) {
+        if (c === a || c === b) continue;
+        if (restricted[a].has(c) && restricted[c].has(b)) {
+          redundant = true;
+          break;
+        }
+      }
+      if (!redundant) edges.push([a, b]);
+    }
+  }
+  return edges;
+}
+
+const beginnerSet = ["CPA", "CCA1", "CCA2", "CPAD", "vCCA"];
+const intermediateSet = [
+  ...beginnerSet,
+  "CCA1.5",
+  "CCVA1",
+  "CCVA2",
+  "gCCA",
+  "RCCA",
+  "funcCPA",
+];
+const expertSet = notions.map((n) => n.data.acronym);
+
+// Validate that every acronym in the beginner/intermediate sets actually exists
+for (const a of [...beginnerSet, ...intermediateSet]) {
+  if (!byAcronym[a]) {
+    throw new Error(`Unknown acronym in difficulty set: ${a}`);
+  }
+}
+
+type LevelPayload = {
+  acronyms: string[];
+  titles: Record<string, string>;
+  slugs: Record<string, string>;
+  edges: [string, string][]; // transitive reduction: the "essential" edges
+  closureEdges: [string, string][]; // full closure: everything transitively implied
+};
+
+function closureForSubset(acronyms: string[]): [string, string][] {
+  const filtered = new Set(acronyms);
+  const out: [string, string][] = [];
+  for (const a of acronyms) {
+    for (const b of closure[a] ?? []) {
+      if (filtered.has(b)) out.push([a, b]);
+    }
+  }
+  return out;
+}
+
+function buildLevel(acronyms: string[]): LevelPayload {
+  const titles: Record<string, string> = {};
+  const slugs: Record<string, string> = {};
+  for (const a of acronyms) {
+    const n = byAcronym[a];
+    titles[a] = n?.data.title ?? a;
+    slugs[a] = n?.slug ?? "";
+  }
+  return {
+    acronyms,
+    titles,
+    slugs,
+    edges: edgesForSubset(acronyms),
+    closureEdges: closureForSubset(acronyms),
+  };
+}
+
+const gameData = {
+  levels: {
+    beginner: buildLevel(beginnerSet),
+    intermediate: buildLevel(intermediateSet),
+    expert: buildLevel(expertSet),
+  },
+};
+
+const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
+---
+
+<BaseLayout
+  title="Recreate the graph | SecurityNotionsZoo"
+  description="Rebuild the implication graph of cryptographic security notions from scratch."
+>
+  <div class="mb-8">
+    <a
+      href="/games/"
+      class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-6 decoration-transparent transition-colors"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+      >
+      Back to games
+    </a>
+  </div>
+
+  <div class="max-w-2xl mx-auto w-full">
+    <!-- START SCREEN -->
+    <section id="rg-start" class="space-y-8">
+      <div>
+        <h1
+          class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-slate-100 mb-3 tracking-tight transition-colors"
+        >
+          Recreate the graph
+        </h1>
+        <p
+          class="text-lg text-slate-600 dark:text-slate-400 transition-colors"
+        >
+          Rebuild the implication graph by drawing arrows from stronger notions
+          to weaker ones. The target is the minimum set of essential arrows:
+          transitive shortcuts count as redundant but valid.
+        </p>
+      </div>
+
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm transition-colors"
+      >
+        <fieldset>
+          <legend
+            class="text-base font-semibold text-slate-900 dark:text-slate-200 mb-4 transition-colors"
+          >
+            Difficulty
+          </legend>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="rg-difficulty">
+            <button
+              type="button"
+              data-difficulty="beginner"
+              class="rg-diff-btn py-4 px-4 rounded-xl font-semibold border-2 transition-colors text-left"
+            >
+              <div class="text-lg">Beginner</div>
+              <div class="text-xs mt-1 opacity-80">
+                {gameData.levels.beginner.acronyms.length} notions, {
+                  gameData.levels.beginner.edges.length
+                } arrows
+              </div>
+            </button>
+            <button
+              type="button"
+              data-difficulty="intermediate"
+              class="rg-diff-btn py-4 px-4 rounded-xl font-semibold border-2 transition-colors text-left"
+            >
+              <div class="text-lg">Intermediate</div>
+              <div class="text-xs mt-1 opacity-80">
+                {gameData.levels.intermediate.acronyms.length} notions, {
+                  gameData.levels.intermediate.edges.length
+                } arrows
+              </div>
+            </button>
+            <button
+              type="button"
+              data-difficulty="expert"
+              class="rg-diff-btn py-4 px-4 rounded-xl font-semibold border-2 transition-colors text-left"
+            >
+              <div class="text-lg">Expert</div>
+              <div class="text-xs mt-1 opacity-80">
+                {gameData.levels.expert.acronyms.length} notions, {
+                  gameData.levels.expert.edges.length
+                } arrows
+              </div>
+            </button>
+          </div>
+        </fieldset>
+
+        <button
+          type="button"
+          id="rg-start-btn"
+          class="w-full mt-6 py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        >
+          Start
+        </button>
+
+        <p
+          id="rg-best-scores"
+          class="mt-4 text-sm text-slate-500 dark:text-slate-400 text-center transition-colors hidden"
+        >
+        </p>
+      </div>
+
+      <div
+        class="text-sm text-slate-500 dark:text-slate-400 text-center transition-colors"
+      >
+        A directed arrow A &rarr; B means <em>A implies B</em>: A is the
+        stronger notion.
+      </div>
+    </section>
+
+    <!-- PLAYING SCREEN -->
+    <section id="rg-playing" class="space-y-4" hidden>
+      <div
+        class="flex flex-wrap justify-between items-center gap-2 text-sm text-slate-600 dark:text-slate-400 transition-colors"
+      >
+        <div>
+          <span id="rg-difficulty-label" class="font-semibold"></span>
+          <span class="mx-2 opacity-50">&middot;</span>
+          <span id="rg-edge-count">0</span> arrow<span id="rg-edge-count-plural"
+            >s</span
+          > placed
+        </div>
+        <button
+          type="button"
+          id="rg-reset-btn"
+          class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors underline decoration-dotted underline-offset-4"
+        >
+          Clear all
+        </button>
+      </div>
+
+      <div
+        class="flex items-start sm:items-center gap-3 px-4 py-3 bg-sky-50 dark:bg-accent/10 border border-sky-200/70 dark:border-accent/20 rounded-xl text-sm text-slate-700 dark:text-slate-200 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="text-sky-600 dark:text-accent shrink-0 mt-0.5 sm:mt-0"
+          aria-hidden="true"
+        >
+          <polyline points="5 9 2 12 5 15"></polyline>
+          <polyline points="9 5 12 2 15 5"></polyline>
+          <polyline points="15 19 12 22 9 19"></polyline>
+          <polyline points="19 9 22 12 19 15"></polyline>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <line x1="12" y1="2" x2="12" y2="22"></line>
+        </svg>
+        <span class="leading-snug">
+          Tap a source notion then a target to draw an arrow. <strong
+            class="text-sky-700 dark:text-accent">Drag nodes</strong
+          > to rearrange them.
+        </span>
+      </div>
+
+      <div
+        id="rg-canvas"
+        class="relative aspect-square w-full bg-white dark:bg-slate-800/20 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm overflow-hidden transition-colors touch-manipulation select-none"
+      >
+        <svg
+          id="rg-svg"
+          class="absolute inset-0 w-full h-full"
+          viewBox="0 0 1000 1000"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <defs>
+            <marker
+              id="rg-arrow"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="5"
+              markerHeight="5"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+            </marker>
+            <marker
+              id="rg-arrow-correct"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="5"
+              markerHeight="5"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"></path>
+            </marker>
+            <marker
+              id="rg-arrow-wrong"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="5"
+              markerHeight="5"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#f43f5e"></path>
+            </marker>
+            <marker
+              id="rg-arrow-missing"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="5"
+              markerHeight="5"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"></path>
+            </marker>
+            <marker
+              id="rg-arrow-redundant"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="5"
+              markerHeight="5"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#0ea5e9"></path>
+            </marker>
+          </defs>
+          <g id="rg-edges" class="text-slate-400 dark:text-slate-500"></g>
+        </svg>
+        <div
+          id="rg-nodes"
+          class="absolute inset-0 pointer-events-none"
+        >
+        </div>
+      </div>
+
+      <div
+        class="text-xs text-slate-500 dark:text-slate-400 text-center transition-colors"
+      >
+        Tap an arrow to remove it.
+      </div>
+
+      <button
+        type="button"
+        id="rg-submit-btn"
+        class="w-full py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+      >
+        Check my graph
+      </button>
+    </section>
+
+    <!-- END SCREEN -->
+    <section id="rg-end" class="space-y-6" hidden>
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm text-center transition-colors"
+      >
+        <div
+          id="rg-end-emoji"
+          class="text-6xl mb-3 select-none"
+          aria-hidden="true"
+        >
+        </div>
+        <h2
+          class="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-2 transition-colors"
+        >
+          <span id="rg-final-score">0</span> / <span id="rg-final-total">0</span>
+        </h2>
+        <p
+          id="rg-end-message"
+          class="text-base text-slate-600 dark:text-slate-400 transition-colors"
+        >
+        </p>
+
+        <div
+          class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm font-medium max-w-xl mx-auto"
+        >
+          <div
+            class="rounded-xl p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          >
+            <div class="text-2xl font-bold" id="rg-count-correct">0</div>
+            <div class="text-xs uppercase tracking-wide mt-1">Correct</div>
+          </div>
+          <div
+            class="rounded-xl p-3 bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300"
+          >
+            <div class="text-2xl font-bold" id="rg-count-redundant">0</div>
+            <div class="text-xs uppercase tracking-wide mt-1">Redundant</div>
+          </div>
+          <div
+            class="rounded-xl p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300"
+          >
+            <div class="text-2xl font-bold" id="rg-count-missing">0</div>
+            <div class="text-xs uppercase tracking-wide mt-1">Missing</div>
+          </div>
+          <div
+            class="rounded-xl p-3 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300"
+          >
+            <div class="text-2xl font-bold" id="rg-count-wrong">0</div>
+            <div class="text-xs uppercase tracking-wide mt-1">Incorrect</div>
+          </div>
+        </div>
+
+        <p
+          class="mt-4 text-xs text-slate-500 dark:text-slate-400 transition-colors"
+        >
+          Green: essential arrows in the minimum graph. Blue: valid transitive
+          shortcuts that are redundant. Amber: essential arrows you missed.
+          Red: arrows that aren't implied at all.
+        </p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          id="rg-again-btn"
+          class="flex-1 py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        >
+          Play again
+        </button>
+        <a
+          href="/games/"
+          class="flex-1 py-4 px-6 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-lg font-semibold text-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors decoration-transparent"
+        >
+          Back to games
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <script type="application/json" id="rg-data" is:inline set:html={gameJson} />
+
+  <script>
+    interface Level {
+      acronyms: string[];
+      titles: Record<string, string>;
+      slugs: Record<string, string>;
+      edges: [string, string][]; // transitive reduction
+      closureEdges: [string, string][]; // full closure
+    }
+
+    interface GameData {
+      levels: {
+        beginner: Level;
+        intermediate: Level;
+        expert: Level;
+      };
+    }
+
+    type Difficulty = keyof GameData["levels"];
+
+    const initReorder = () => {
+      const dataEl = document.getElementById("rg-data");
+      if (!dataEl || !dataEl.textContent) return;
+      const data: GameData = JSON.parse(dataEl.textContent);
+
+      const $ = <T extends HTMLElement = HTMLElement>(sel: string) =>
+        document.querySelector(sel) as T | null;
+
+      // ---------- State ----------
+      let selectedDifficulty: Difficulty = "beginner";
+      let currentLevel: Level | null = null;
+      let nodePositions: Record<string, { x: number; y: number }> = {};
+      let userEdges = new Set<string>();
+      let selectedSource: string | null = null;
+      let locked = false; // when results are shown, freeze interactions
+
+      const VIEW_W = 1000;
+      const VIEW_H = 1000;
+      const DIFF_LABELS: Record<Difficulty, string> = {
+        beginner: "Beginner",
+        intermediate: "Intermediate",
+        expert: "Expert",
+      };
+
+      // Node radius scales down as the number of nodes grows, so labels
+      // stay readable at every difficulty.
+      const nodeRadiusFor = (n: number) =>
+        Math.max(44, Math.min(70, 78 - n * 2));
+      let nodeR = 56; // current node radius (SVG units)
+
+      // ---------- Layout ----------
+      // Scatter nodes randomly so no spatial structure is revealed.
+      // Uses rejection sampling to keep a minimum separation between nodes.
+      const computePositions = (acronyms: string[]) => {
+        const n = acronyms.length;
+        nodeR = nodeRadiusFor(n);
+        const pad = nodeR + 20;
+        const minDist = nodeR * 2 + 24;
+        const minDistSq = minDist * minDist;
+        const positions: Record<string, { x: number; y: number }> = {};
+        const placed: Array<{ x: number; y: number }> = [];
+        for (const a of acronyms) {
+          let pos: { x: number; y: number } | null = null;
+          for (let attempt = 0; attempt < 400; attempt++) {
+            const x = pad + Math.random() * (VIEW_W - 2 * pad);
+            const y = pad + Math.random() * (VIEW_H - 2 * pad);
+            let ok = true;
+            for (const p of placed) {
+              const dx = p.x - x;
+              const dy = p.y - y;
+              if (dx * dx + dy * dy < minDistSq) {
+                ok = false;
+                break;
+              }
+            }
+            if (ok) {
+              pos = { x, y };
+              break;
+            }
+          }
+          if (!pos) {
+            // Fallback: drop it somewhere inside bounds
+            pos = {
+              x: pad + Math.random() * (VIEW_W - 2 * pad),
+              y: pad + Math.random() * (VIEW_H - 2 * pad),
+            };
+          }
+          positions[a] = pos;
+          placed.push(pos);
+        }
+        return positions;
+      };
+
+      // ---------- Rendering ----------
+      const edgeKey = (a: string, b: string) => `${a}|${b}`;
+      const edgeParts = (key: string): [string, string] =>
+        key.split("|") as [string, string];
+
+      const trimLine = (
+        src: { x: number; y: number },
+        dst: { x: number; y: number },
+        radius: number,
+      ) => {
+        const dx = dst.x - src.x;
+        const dy = dst.y - src.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const nx = dx / d;
+        const ny = dy / d;
+        return {
+          x1: src.x + radius * nx,
+          y1: src.y + radius * ny,
+          x2: dst.x - radius * nx,
+          y2: dst.y - radius * ny,
+        };
+      };
+
+      const updateNodeButtonPosition = (
+        btn: HTMLButtonElement,
+        acronym: string,
+      ) => {
+        const pos = nodePositions[acronym];
+        if (!pos) return;
+        const pctX = (pos.x / VIEW_W) * 100;
+        const pctY = (pos.y / VIEW_H) * 100;
+        const pctW = ((nodeR * 2) / VIEW_W) * 100;
+        const pctH = ((nodeR * 2) / VIEW_H) * 100;
+        btn.style.left = `calc(${pctX}% - ${pctW / 2}%)`;
+        btn.style.top = `calc(${pctY}% - ${pctH / 2}%)`;
+        btn.style.width = `${pctW}%`;
+      };
+
+      const renderNodes = () => {
+        const container = $("#rg-nodes");
+        if (!container || !currentLevel) return;
+        container.innerHTML = "";
+        for (const acronym of currentLevel.acronyms) {
+          const pos = nodePositions[acronym];
+          if (!pos) continue;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className =
+            "rg-node pointer-events-auto absolute flex items-center justify-center rounded-full border-2 text-[9px] sm:text-xs font-semibold leading-none select-none transition-[transform,box-shadow,background-color,border-color] duration-150 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-accent/60 px-1 text-center cursor-grab active:cursor-grabbing touch-none hover:shadow-md hover:scale-[1.04] hover:z-10";
+          btn.dataset.acronym = acronym;
+          btn.style.aspectRatio = "1 / 1";
+          btn.textContent = acronym;
+          btn.title = currentLevel.titles[acronym] || acronym;
+          updateNodeButtonPosition(btn, acronym);
+          attachNodeInteractions(btn, acronym);
+          applyNodeStyle(btn, acronym);
+          container.appendChild(btn);
+        }
+      };
+
+      // ---------- Drag + click detection ----------
+      interface DragState {
+        acronym: string;
+        pointerId: number;
+        startClientX: number;
+        startClientY: number;
+        startNodeX: number;
+        startNodeY: number;
+        button: HTMLButtonElement;
+        moved: boolean;
+      }
+      let dragState: DragState | null = null;
+      const DRAG_THRESHOLD_PX = 6;
+      let edgeRenderPending = false;
+      const scheduleEdgeRender = () => {
+        if (edgeRenderPending) return;
+        edgeRenderPending = true;
+        requestAnimationFrame(() => {
+          edgeRenderPending = false;
+          renderEdges();
+        });
+      };
+
+      const attachNodeInteractions = (
+        btn: HTMLButtonElement,
+        acronym: string,
+      ) => {
+        btn.addEventListener("pointerdown", (e) => {
+          if (locked) return;
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            btn.setPointerCapture(e.pointerId);
+          } catch {}
+          dragState = {
+            acronym,
+            pointerId: e.pointerId,
+            startClientX: e.clientX,
+            startClientY: e.clientY,
+            startNodeX: nodePositions[acronym].x,
+            startNodeY: nodePositions[acronym].y,
+            button: btn,
+            moved: false,
+          };
+        });
+
+        btn.addEventListener("pointermove", (e) => {
+          if (
+            !dragState ||
+            dragState.acronym !== acronym ||
+            dragState.pointerId !== e.pointerId
+          )
+            return;
+          const dxPx = e.clientX - dragState.startClientX;
+          const dyPx = e.clientY - dragState.startClientY;
+          if (
+            !dragState.moved &&
+            Math.hypot(dxPx, dyPx) > DRAG_THRESHOLD_PX
+          ) {
+            dragState.moved = true;
+            // Dragging cancels any in-progress edge selection
+            selectedSource = null;
+            refreshNodeStyles();
+            btn.classList.add(
+              "shadow-xl",
+              "scale-[1.08]",
+              "z-20",
+              "cursor-grabbing",
+            );
+          }
+          if (dragState.moved) {
+            const canvas = $("#rg-canvas");
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            const dx = (dxPx / rect.width) * VIEW_W;
+            const dy = (dyPx / rect.height) * VIEW_H;
+            const newX = Math.max(
+              nodeR + 4,
+              Math.min(VIEW_W - nodeR - 4, dragState.startNodeX + dx),
+            );
+            const newY = Math.max(
+              nodeR + 4,
+              Math.min(VIEW_H - nodeR - 4, dragState.startNodeY + dy),
+            );
+            nodePositions[acronym] = { x: newX, y: newY };
+            updateNodeButtonPosition(btn, acronym);
+            scheduleEdgeRender();
+          }
+        });
+
+        const endDrag = (e: PointerEvent) => {
+          if (
+            !dragState ||
+            dragState.acronym !== acronym ||
+            dragState.pointerId !== e.pointerId
+          )
+            return;
+          try {
+            btn.releasePointerCapture(e.pointerId);
+          } catch {}
+          const wasDrag = dragState.moved;
+          dragState = null;
+          btn.classList.remove(
+            "shadow-xl",
+            "scale-[1.08]",
+            "z-20",
+            "cursor-grabbing",
+          );
+          if (!wasDrag) {
+            if (locked) {
+              const slug = currentLevel?.slugs[acronym];
+              if (slug) window.open(`/notions/${slug}/`, "_blank");
+              return;
+            }
+            onNodeClick(acronym);
+          }
+        };
+
+        btn.addEventListener("pointerup", endDrag);
+        btn.addEventListener("pointercancel", endDrag);
+      };
+
+      const applyNodeStyle = (btn: HTMLButtonElement, acronym: string) => {
+        btn.classList.remove(
+          "bg-white",
+          "dark:bg-slate-900",
+          "border-slate-300",
+          "dark:border-slate-600",
+          "text-slate-800",
+          "dark:text-slate-200",
+          "bg-sky-100",
+          "dark:bg-accent/20",
+          "border-sky-500",
+          "dark:border-accent",
+          "text-sky-800",
+          "dark:text-accent",
+          "ring-2",
+          "ring-sky-400",
+          "dark:ring-accent/60",
+          "shadow-md",
+        );
+        if (acronym === selectedSource) {
+          btn.classList.add(
+            "bg-sky-100",
+            "dark:bg-accent/20",
+            "border-sky-500",
+            "dark:border-accent",
+            "text-sky-800",
+            "dark:text-accent",
+            "ring-2",
+            "ring-sky-400",
+            "dark:ring-accent/60",
+            "shadow-md",
+          );
+        } else {
+          btn.classList.add(
+            "bg-white",
+            "dark:bg-slate-900",
+            "border-slate-300",
+            "dark:border-slate-600",
+            "text-slate-800",
+            "dark:text-slate-200",
+          );
+        }
+      };
+
+      const refreshNodeStyles = () => {
+        const container = $("#rg-nodes");
+        if (!container) return;
+        container
+          .querySelectorAll<HTMLButtonElement>(".rg-node")
+          .forEach((btn) => {
+            applyNodeStyle(btn, btn.dataset.acronym || "");
+          });
+      };
+
+      const renderEdges = () => {
+        const group = $<SVGGElement>("#rg-edges" as any) as unknown as
+          | SVGGElement
+          | null;
+        if (!group || !currentLevel) return;
+        group.innerHTML = "";
+        for (const key of userEdges) {
+          const [a, b] = edgeParts(key);
+          const src = nodePositions[a];
+          const dst = nodePositions[b];
+          if (!src || !dst) continue;
+          const { x1, y1, x2, y2 } = trimLine(src, dst, nodeR);
+          appendEdge(group, { x1, y1, x2, y2, kind: "user", key });
+        }
+      };
+
+      type EdgeKind =
+        | "user"
+        | "correct"
+        | "redundant"
+        | "wrong"
+        | "missing";
+
+      const appendEdge = (
+        group: SVGGElement,
+        opts: {
+          x1: number;
+          y1: number;
+          x2: number;
+          y2: number;
+          kind: EdgeKind;
+          key: string;
+        },
+      ) => {
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        // Hit area: wide invisible stroke so taps near the arrow still register.
+        // `pointer-events="stroke"` makes hit-testing ignore the transparent
+        // stroke colour — without it, SVG's default visiblePainted mode would
+        // skip any line whose stroke has alpha 0.
+        const hit = document.createElementNS(SVG_NS, "line");
+        hit.setAttribute("x1", String(opts.x1));
+        hit.setAttribute("y1", String(opts.y1));
+        hit.setAttribute("x2", String(opts.x2));
+        hit.setAttribute("y2", String(opts.y2));
+        hit.setAttribute("stroke", "transparent");
+        hit.setAttribute("stroke-width", "28");
+        hit.setAttribute("stroke-linecap", "round");
+        hit.setAttribute("pointer-events", "stroke");
+        hit.style.cursor = locked ? "default" : "pointer";
+        hit.dataset.edgeKey = opts.key;
+        if (!locked && opts.kind === "user") {
+          hit.addEventListener("click", (e) => {
+            e.stopPropagation();
+            userEdges.delete(opts.key);
+            refreshCount();
+            renderEdges();
+          });
+        }
+
+        const line = document.createElementNS(SVG_NS, "line");
+        line.setAttribute("x1", String(opts.x1));
+        line.setAttribute("y1", String(opts.y1));
+        line.setAttribute("x2", String(opts.x2));
+        line.setAttribute("y2", String(opts.y2));
+        line.setAttribute("stroke-width", "4");
+        line.setAttribute("stroke-linecap", "round");
+        line.style.pointerEvents = "none";
+
+        switch (opts.kind) {
+          case "user":
+            line.setAttribute("stroke", "currentColor");
+            line.setAttribute("marker-end", "url(#rg-arrow)");
+            break;
+          case "correct":
+            line.setAttribute("stroke", "#10b981");
+            line.setAttribute("marker-end", "url(#rg-arrow-correct)");
+            break;
+          case "redundant":
+            line.setAttribute("stroke", "#0ea5e9");
+            line.setAttribute("stroke-dasharray", "8 4");
+            line.setAttribute("marker-end", "url(#rg-arrow-redundant)");
+            break;
+          case "wrong":
+            line.setAttribute("stroke", "#f43f5e");
+            line.setAttribute("stroke-dasharray", "10 6");
+            line.setAttribute("marker-end", "url(#rg-arrow-wrong)");
+            break;
+          case "missing":
+            line.setAttribute("stroke", "#f59e0b");
+            line.setAttribute("stroke-dasharray", "4 6");
+            line.setAttribute("marker-end", "url(#rg-arrow-missing)");
+            break;
+        }
+
+        group.appendChild(hit);
+        group.appendChild(line);
+      };
+
+      const refreshCount = () => {
+        const countEl = $("#rg-edge-count");
+        const pluralEl = $("#rg-edge-count-plural");
+        if (countEl) countEl.textContent = String(userEdges.size);
+        if (pluralEl) pluralEl.textContent = userEdges.size === 1 ? "" : "s";
+      };
+
+      // ---------- Interaction ----------
+      const onNodeClick = (acronym: string) => {
+        if (!currentLevel) return;
+        if (!selectedSource) {
+          selectedSource = acronym;
+          refreshNodeStyles();
+          return;
+        }
+        if (selectedSource === acronym) {
+          selectedSource = null;
+          refreshNodeStyles();
+          return;
+        }
+        const key = edgeKey(selectedSource, acronym);
+        if (userEdges.has(key)) {
+          userEdges.delete(key);
+        } else {
+          userEdges.add(key);
+        }
+        selectedSource = null;
+        refreshNodeStyles();
+        renderEdges();
+        refreshCount();
+      };
+
+      const clearAll = () => {
+        userEdges.clear();
+        selectedSource = null;
+        refreshNodeStyles();
+        renderEdges();
+        refreshCount();
+      };
+
+      // ---------- Difficulty picker ----------
+      const diffBtns =
+        document.querySelectorAll<HTMLButtonElement>(".rg-diff-btn");
+      const activeClasses = [
+        "border-sky-600",
+        "dark:border-accent",
+        "bg-sky-50",
+        "dark:bg-accent/10",
+        "text-sky-700",
+        "dark:text-accent",
+      ];
+      const inactiveClasses = [
+        "border-slate-200",
+        "dark:border-slate-700",
+        "bg-white",
+        "dark:bg-slate-800/40",
+        "text-slate-700",
+        "dark:text-slate-300",
+      ];
+      const setDifficulty = (d: Difficulty) => {
+        selectedDifficulty = d;
+        diffBtns.forEach((b) => {
+          const active = (b.dataset.difficulty as Difficulty) === d;
+          b.classList.remove(...activeClasses, ...inactiveClasses);
+          b.classList.add(...(active ? activeClasses : inactiveClasses));
+        });
+      };
+      diffBtns.forEach((b) => {
+        b.addEventListener("click", () =>
+          setDifficulty(b.dataset.difficulty as Difficulty),
+        );
+      });
+      setDifficulty("beginner");
+
+      // ---------- Screens ----------
+      const showScreen = (id: "start" | "playing" | "end") => {
+        for (const s of ["start", "playing", "end"] as const) {
+          const el = document.getElementById(`rg-${s}`);
+          if (el) (el as HTMLElement).hidden = s !== id;
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+
+      // ---------- Session ----------
+      const startSession = (d: Difficulty) => {
+        currentLevel = data.levels[d];
+        nodePositions = computePositions(currentLevel.acronyms);
+        userEdges = new Set();
+        selectedSource = null;
+        locked = false;
+        const label = $("#rg-difficulty-label");
+        if (label) label.textContent = DIFF_LABELS[d];
+        refreshCount();
+        renderNodes();
+        renderEdges();
+        showScreen("playing");
+      };
+
+      const endSession = () => {
+        if (!currentLevel) return;
+        const reduction = new Set(
+          currentLevel.edges.map(([a, b]) => edgeKey(a, b)),
+        );
+        const closureSet = new Set(
+          currentLevel.closureEdges.map(([a, b]) => edgeKey(a, b)),
+        );
+
+        const correct: string[] = [];
+        const redundant: string[] = [];
+        const wrong: string[] = [];
+        const missing: string[] = [];
+        for (const e of userEdges) {
+          if (reduction.has(e)) correct.push(e);
+          else if (closureSet.has(e)) redundant.push(e);
+          else wrong.push(e);
+        }
+        for (const e of reduction) {
+          if (!userEdges.has(e)) missing.push(e);
+        }
+
+        locked = true;
+        renderResultsOnCanvas(correct, redundant, wrong, missing);
+
+        const totalEssential = reduction.size;
+        const scoreEl = $("#rg-final-score");
+        const totalEl = $("#rg-final-total");
+        if (scoreEl) scoreEl.textContent = String(correct.length);
+        if (totalEl) totalEl.textContent = String(totalEssential);
+        const cC = $("#rg-count-correct");
+        const cR = $("#rg-count-redundant");
+        const cM = $("#rg-count-missing");
+        const cW = $("#rg-count-wrong");
+        if (cC) cC.textContent = String(correct.length);
+        if (cR) cR.textContent = String(redundant.length);
+        if (cM) cM.textContent = String(missing.length);
+        if (cW) cW.textContent = String(wrong.length);
+
+        const score = Math.max(0, correct.length - wrong.length);
+        const perfect =
+          correct.length === totalEssential && wrong.length === 0;
+        const ratio =
+          totalEssential > 0 ? correct.length / totalEssential : 0;
+        const endEmoji = $("#rg-end-emoji");
+        if (endEmoji) {
+          endEmoji.textContent = perfect
+            ? "\uD83C\uDFC6"
+            : ratio >= 0.8
+              ? "\uD83C\uDF89"
+              : ratio >= 0.5
+                ? "\uD83D\uDC4D"
+                : "\uD83D\uDCDA";
+        }
+
+        const bestKey = `rg-best-${selectedDifficulty}`;
+        let prevBest = 0;
+        try {
+          prevBest = parseInt(localStorage.getItem(bestKey) || "0", 10);
+        } catch {}
+        let msg = "";
+        if (score > prevBest) {
+          try {
+            localStorage.setItem(bestKey, String(score));
+          } catch {}
+          msg =
+            prevBest > 0
+              ? `New best score! (was ${prevBest})`
+              : "New best score!";
+        } else if (prevBest > 0) {
+          msg = `Your best for ${DIFF_LABELS[selectedDifficulty]}: ${prevBest}`;
+        }
+        const msgEl = $("#rg-end-message");
+        if (msgEl)
+          msgEl.textContent =
+            msg || (perfect ? "Perfect graph!" : `${correct.length} essential arrows found`);
+
+        showScreen("end");
+      };
+
+      const renderResultsOnCanvas = (
+        correct: string[],
+        redundant: string[],
+        wrong: string[],
+        missing: string[],
+      ) => {
+        const group = $<SVGGElement>("#rg-edges" as any) as unknown as
+          | SVGGElement
+          | null;
+        if (!group) return;
+        group.innerHTML = "";
+        const drawOne = (key: string, kind: EdgeKind) => {
+          const [a, b] = edgeParts(key);
+          const src = nodePositions[a];
+          const dst = nodePositions[b];
+          if (!src || !dst) return;
+          const { x1, y1, x2, y2 } = trimLine(src, dst, nodeR);
+          appendEdge(group, { x1, y1, x2, y2, kind, key });
+        };
+        // Draw less-important categories first so correct edges sit on top
+        wrong.forEach((k) => drawOne(k, "wrong"));
+        missing.forEach((k) => drawOne(k, "missing"));
+        redundant.forEach((k) => drawOne(k, "redundant"));
+        correct.forEach((k) => drawOne(k, "correct"));
+      };
+
+      // ---------- Wire buttons ----------
+      const startBtn = $<HTMLButtonElement>("#rg-start-btn");
+      if (startBtn)
+        startBtn.addEventListener("click", () => startSession(selectedDifficulty));
+
+      const submitBtn = $<HTMLButtonElement>("#rg-submit-btn");
+      if (submitBtn) submitBtn.addEventListener("click", endSession);
+
+      const resetBtn = $<HTMLButtonElement>("#rg-reset-btn");
+      if (resetBtn) resetBtn.addEventListener("click", clearAll);
+
+      const againBtn = $<HTMLButtonElement>("#rg-again-btn");
+      if (againBtn)
+        againBtn.addEventListener("click", () => showScreen("start"));
+
+      // Escape key cancels an in-progress source selection
+      window.addEventListener("keydown", (e) => {
+        if (locked) return;
+        if (e.key === "Escape" && selectedSource) {
+          selectedSource = null;
+          refreshNodeStyles();
+        }
+      });
+
+      // Best score display on start screen
+      const bestEl = $("#rg-best-scores");
+      const parts: string[] = [];
+      for (const d of ["beginner", "intermediate", "expert"] as Difficulty[]) {
+        try {
+          const v = parseInt(localStorage.getItem(`rg-best-${d}`) || "0", 10);
+          if (v > 0) parts.push(`${DIFF_LABELS[d]}: ${v}`);
+        } catch {}
+      }
+      if (bestEl && parts.length > 0) {
+        bestEl.textContent = `Best scores \u00B7 ${parts.join(" \u00B7 ")}`;
+        bestEl.classList.remove("hidden");
+      }
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initReorder);
+    } else {
+      initReorder();
+    }
+  </script>
+</BaseLayout>

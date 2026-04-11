@@ -19,6 +19,7 @@ function lastmodForUrl(url) {
   if (pathname === '/primer/') return gitLastMod('src/content/primer.mdx');
   if (pathname === '/games/') return gitLastMod('src/pages/games/index.astro');
   if (pathname === '/games/quiz/') return gitLastMod('src/pages/games/quiz.astro');
+  if (pathname === '/games/reorder/') return gitLastMod('src/pages/games/reorder.astro');
   const notionMatch = pathname.match(/^\/notions\/([^/]+)\/?$/);
   if (notionMatch) return gitLastMod(`src/content/notions/${notionMatch[1]}.mdx`);
   return buildStart;
