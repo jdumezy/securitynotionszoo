@@ -3,18 +3,29 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ReadProgressBar from '../../components/ReadProgressBar.astro';
 import BackToTop from '../../components/BackToTop.astro';
-import BackToTaxonomy from '../../components/BackToTaxonomy.astro';
+import NotionNav from '../../components/NotionNav.astro';
 
 export async function getStaticPaths() {
   const notions = await getCollection('notions');
   return notions.map(notion => ({
     params: { slug: notion.slug },
-    props: { notion },
+    props: { notion, allNotions: notions },
   }));
 }
 
-const { notion } = Astro.props;
+const { notion, allNotions } = Astro.props;
 const { Content } = await notion.render();
+
+const acronymMap = new Map(
+  allNotions.map((n: any) => [n.data.acronym, { acronym: n.data.acronym, title: n.data.title, slug: n.slug }])
+);
+
+const impliesResolved = notion.data.implies
+  .map((a: string) => acronymMap.get(a))
+  .filter(Boolean);
+const impliedByResolved = notion.data.implied_by
+  .map((a: string) => acronymMap.get(a))
+  .filter(Boolean);
 ---
 
 <BaseLayout
@@ -113,7 +124,7 @@ const { Content } = await notion.render();
     <Content />
   </div>
 
-  <BackToTaxonomy />
+  <NotionNav implies={impliesResolved} impliedBy={impliedByResolved} />
   <ReadProgressBar />
   <BackToTop />
 </BaseLayout>

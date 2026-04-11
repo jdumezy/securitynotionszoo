@@ -1,5 +1,5 @@
 ---
-title: "Verified Chosen Ciphertext Attack"
+title: "Verifiable Chosen Ciphertext Attack"
 acronym: "vCCA"
 description: "CCA2 relaxation for FHE using a SNARK-based extractor to filter post-challenge decryption queries derived from the challenge ciphertext."
 tags: ["Filtered adaptive decryption oracle", "FHE-compatible", "SNARK-based"]
@@ -8,13 +8,13 @@ introduced_in:
     authors: ["Marc Manulis", "Jérôme Nguyen"]
     year: 2024
     link: "https://eprint.iacr.org/2024/202"
-implies: ["IV-CCA"]
-implied_by: ["CCA2"]
+implies: ["IV-CCA", "HCCA", "funcCPA", "CCA1.5", "SA"]
+implied_by: ["vCCAD"]
 ---
 
 ## Overview
 
-Verified Chosen Ciphertext Attack (vCCA) security, introduced by Manulis and Nguyen, is a relaxation of CCA2 security designed to be compatible with the malleable nature of FHE.
+Verifiable Chosen Ciphertext Attack (vCCA) security, introduced by Manulis and Nguyen, is a relaxation of CCA2 security designed to be compatible with the malleable nature of FHE.
 The core idea is to augment the FHE scheme with machinery that proves the well-formedness of ciphertexts - both fresh ciphertexts (direct outputs of encryption) and evaluated ciphertexts (derived through genuine homomorphic operations).
 The decryption function rejects any ciphertext that fails verification.
 
@@ -47,8 +47,9 @@ In an FHE deployment, a decryption oracle naturally arises whenever the secret k
 The vCCA decryption oracle blocks exactly these queries.
 
 However, vCCA was originally defined and studied under the correctness assumption.
+In the correct regime (negligible decryption errors), vCCA and vCCAD are equivalent [BCF+25, Prop. 5.6]. In the general regime (approximate FHE), vCCAD is strictly stronger [BCF+25, Prop. 5.7].
 In the general regime where approximate FHE schemes are allowed, vCCA does not imply CPAD security - it only implies the weaker $\mathsf{CPAD}_1$ variant.
-Conversely, $\mathsf{CPAD}$ does not imply vCCA.
+Conversely, CPAD does not imply vCCA.
 This means that for approximate FHE deployments, vCCA alone may be insufficient: the decryption oracle leakage exploited by CPAD attacks is orthogonal to the malleability attacks that vCCA prevents.
 
 ## Achieving This Notion
@@ -58,6 +59,7 @@ The general strategy is to augment the scheme with proof machinery: fresh cipher
 The decryption function returns $\bot$ when verification fails.
 
 Specific blueprints include Encrypt-then-Sign (private key, using SUF-CMA signatures), Encrypt-then-MAC (private key, using a MAC), CCA2-Companion-Ciphertext (public key, designated verifier, pairing an FHE ciphertext with a CCA2-encrypted copy of the message and randomness), and a Naor-Yung-based construction (public key, public verifier).
+A fifth blueprint, **Encrypt-then-Prove** [Brzuska et al., CIC 2025], replaces the signature with a publicly verifiable zk-SNARK for the well-formedness language, achieving the first compact, publicly verifiable vCCAD (and hence vCCA) construction in the public-key setting.
 All require a SNARK for the language of correct homomorphic evaluations.
 
 ## Further Reading

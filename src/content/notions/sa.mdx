@@ -1,0 +1,71 @@
+---
+title: "Semi-Active Security"
+acronym: "SA"
+description: "CPAD-style FHE notion: CPA plus a decryption oracle accepting adversary-supplied ciphertexts together with a declared derivation from encryption-oracle inputs."
+tags: ["Constrained decryption oracle", "FHE-compatible"]
+introduced_in:
+  - title: "What Have SNARGs Ever Done for FHE?"
+    authors: ["Michael Walter"]
+    year: 2024
+    link: "https://eprint.iacr.org/2024/1207"
+implies: ["CPA"]
+implied_by: ["vCCA"]
+---
+
+## Overview
+
+Semi-Active (SA) security, introduced by Walter, is an FHE security notion tailored to deployments in which the client (secret-key holder) keeps full control over which inputs are encrypted and which function the server is asked to evaluate. In such a client-server application, the client already knows the input ciphertexts and the function it wants executed, so it is in a position to check any ciphertext returned by the server against those inputs. SA formalises this "the client has state" setting, and Walter uses it to pin down exactly what extra privacy the client gains by pairing an IND-CPA FHE with a SNARG that proves correct evaluation. Walter's paper focuses on the symmetric-key case because it simplifies the discussion, but the game itself works identically in the public-key and private-key settings -- only whether the evaluation key is revealed to the adversary changes.
+
+Compared to CPAD, the SA decryption oracle accepts **externally computed** ciphertexts: the adversary submits a ciphertext $c$ alongside a function $f$ and a list of indices into the encryption state, and the game decrypts $c$ provided the claimed computation does not itself reveal the challenge bit. The motivation is that in an FHE+SNARG application, the server returns an arbitrary ciphertext and the SNARG pins down how it was allegedly derived; SA models that pin-down as a constraint checked inside the decryption oracle. Unlike vCCA, no witness extractor is assumed -- the adversary itself declares the derivation.
+
+Walter proved that SA sits strictly between IND-CPA and IND-vCCA, and is **incomparable** with IND-CCA1, IND-CCVA, IND-CCA1.5, and FuncCPA. In particular, none of these four notions implies SA and SA implies none of them -- SA is a separate axis of strengthening, not a point on the classical CPA $\to$ CCA1 $\to$ CCA2 ladder.
+
+## Formal Definition
+
+SA is defined for an FHE scheme $\mathcal{E} = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$ whose decryption function is extended to take a ciphertext together with the function and input ciphertexts used to produce it, i.e. $\mathcal{E}.\mathsf{Dec}(c, f, (c_1, \ldots, c_\ell))$. The game is a multiple-challenge game structured like the IND-CPAD game, and it maintains an initially empty state $S$ of $(m_0, m_1, c)$ triples together with a hidden bit $b \xleftarrow{\textdollar} \{0,1\}$:
+
+1. **Key generation.** Run $(ek, sk) \leftarrow \mathcal{E}.\mathsf{KeyGen}(1^\lambda)$ and give $ek$ to $\mathcal{A}$. The game works identically in the private-key setting, where $ek$ is not revealed to $\mathcal{A}$.
+
+2. **Encryption request.** On query $(\texttt{plaintext}, m)$: compute $c = \mathcal{E}.\mathsf{Enc}_{ek}(m)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m, m, c)]$.
+
+3. **Challenge request.** On query $(\texttt{test messages}, m_0, m_1)$ with $m_0 \neq m_1$: compute $c = \mathcal{E}.\mathsf{Enc}_{ek}(m_b)$, return $c$ to $\mathcal{A}$, and set $S := [S; (m_0, m_1, c)]$.
+
+4. **Decryption request.** On query $(\texttt{ciphertext}, c, f, (i_1, \ldots, i_\ell))$:
+   - If any $i_j \notin [0, |S|-1]$, return $\bot$.
+   - Let $m'_0 = f(S[i_1].m_0, \ldots, S[i_\ell].m_0)$ and $m'_1 = f(S[i_1].m_1, \ldots, S[i_\ell].m_1)$.
+   - If $m'_0 \neq m'_1$, return $\bot$.
+   - Otherwise return $\mathcal{E}.\mathsf{Dec}(c, f, (S[i_1].c, \ldots, S[i_\ell].c))$.
+
+5. **Guessing stage.** After polynomially many interleaved encryption, challenge, and decryption requests, $\mathcal{A}$ outputs $(\texttt{guess}, b')$; $\mathcal{A}$ wins if $b' = b$.
+
+The advantage is $\mathsf{Adv}^{\mathsf{IND\text{-}SA}}_{\mathcal{E}, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - 1/2 \right|$, and $\mathcal{E}$ is IND-SA secure if this advantage is negligible for all PPT adversaries.
+
+Two features are worth highlighting. First, the decryption oracle accepts an **arbitrary** ciphertext $c$ -- the adversary is not restricted to submitting indices of ciphertexts produced by a game-internal $\mathsf{Eval}$, as in CPAD. Second, the indices $(i_1, \ldots, i_\ell)$ must point into the *encryption* state; the ciphertexts threaded into $\mathsf{Dec}$ are always fresh encryptions from the encryption/challenge requests, not intermediate evaluations. This single-hop structure is what keeps the game checkable without the game itself having to run $\mathsf{Eval}$.
+
+## Attacks & Relevance
+
+Walter's main reason to define SA is to answer the question "does a SNARG for correct evaluation actually buy any input privacy on top of the IND-CPA FHE it wraps?". Under a CPA-secure FHE alone, a malicious server could tamper with the returned ciphertext and a decryption failure could leak information. The SNARG forces the server to commit to a function and input ciphertexts, which the client checks against what it sent; the SA game abstracts exactly this check into the $m'_0 = m'_1$ test. Walter's Lemma 6 formalises the positive result: an IND-CPA FHE paired with a sound SNARG for the "correct evaluation" relation is IND-SA secure.
+
+Walter also establishes the following relational picture (§4 of the paper):
+
+- **CPA $\prec$ SA $\prec$ vCCA** (Lemma 1): SA is strictly stronger than CPA and strictly weaker than vCCA.
+- **SA and CCA1 are incomparable.** $\mathsf{IND\text{-}SA} \not\Rightarrow \mathsf{IND\text{-}CCA1}$ is Walter's Lemma 3, instantiated by the §5 FHE+SNARG construction -- essentially the [VKH23] scheme that Manulis and Nguyen showed *not* to be IND-CCA1 secure. The reverse $\mathsf{IND\text{-}CCA1} \not\Rightarrow \mathsf{IND\text{-}SA}$ follows from Lemma 2 combined with the trivial implication $\mathsf{IND\text{-}CCA1.5} \Rightarrow \mathsf{IND\text{-}CCA1}$.
+- **SA and CCVA are incomparable** (Lemma 4 for the $\mathsf{IND\text{-}SA} \not\Rightarrow \mathsf{IND\text{-}CCVA}$ direction; the other direction follows from Lemma 2 and $\mathsf{IND\text{-}CCA1.5} \Rightarrow \mathsf{IND\text{-}CCVA}$).
+- **SA and CCA1.5 are incomparable** (Lemma 2 for $\mathsf{IND\text{-}CCA1.5} \not\Rightarrow \mathsf{IND\text{-}SA}$; Lemma 3 via $\mathsf{IND\text{-}SA} \not\Rightarrow \mathsf{IND\text{-}CCA1}$ gives the other direction since CCA1.5 $\Rightarrow$ CCA1).
+- **SA and FuncCPA are incomparable** (Lemma 5).
+
+The practical takeaway is that SA is the *right* security target for a client-authoritative FHE+SNARG deployment, but is not a substitute for CCA1, CCVA, or CCA1.5 in settings where those apply -- it sits on a different axis of the hierarchy.
+
+## Achieving This Notion
+
+Walter's Lemma 6 is the headline positive result. Let $\mathcal{E}$ be an IND-CPA secure FHE scheme for function family $\mathcal{F}$ with ciphertext space $\mathcal{C}$, and let $\Pi$ be a sound SNARG for the relation
+
+$$
+\mathcal{R} = \{ (p, c, f, c_1, \ldots, c_\ell) \mid c = \mathcal{E}.\mathsf{Eval}(p, f, c_1, \ldots, c_\ell) \}.
+$$
+
+Define $\mathcal{E}'$ by having $\mathcal{E}'.\mathsf{Eval}$ output $(c, \pi)$ where $\pi \leftarrow \Pi.\mathsf{Prove}(\mathsf{crs}, ((p, c, f, c_1, \ldots, c_\ell), ()))$, and by having $\mathcal{E}'.\mathsf{Dec}$ first run $\Pi.\mathsf{Verify}$ and return $\bot$ if verification rejects. Then $\mathcal{E}'$ is IND-SA secure. Crucially, the proof only needs ordinary SNARG *soundness* -- no simulation-extractability, straightline extraction, or other non-black-box properties -- which is a key practical advantage over the vCCA construction of Manulis and Nguyen.
+
+## Further Reading
+
+The SA notion was introduced by [Walter (ePrint 2024/1207)](https://eprint.iacr.org/2024/1207). A presentation of SA alongside the rest of the FHE security landscape can be found in [Renard (PhD thesis, 2025)](https://theses.hal.science/tel-05421880v1/file/157007_RENARD_2025_archivage.pdf), §2.3.4. For the contrast with vCCA and the stronger notion it implies, see [Manulis and Nguyen (Eurocrypt 2024)](https://eprint.iacr.org/2024/202). The state-tracking structure that SA inherits originates in the IND-CPAD game of [Li and Micciancio (Eurocrypt 2021)](https://eprint.iacr.org/2020/1533).

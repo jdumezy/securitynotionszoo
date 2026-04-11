@@ -9,7 +9,7 @@ introduced_in:
     year: 1984
     link: "https://people.csail.mit.edu/silvio/Selected%20Scientific%20Papers/Encryption/Probabilistic_Encryption.pdf"
 implies: []
-implied_by: ["CPAD", "funcCPA"]
+implied_by: ["CPAD", "funcCPA", "SA", "CCVA1"]
 ---
 
 ## Overview
@@ -17,16 +17,18 @@ implied_by: ["CPAD", "funcCPA"]
 Chosen Plaintext Attack (CPA) security is the baseline security notion for encryption schemes.
 It captures the requirement that an adversary who can choose plaintexts and observe their encryptions should not be able to distinguish which of two chosen messages was encrypted in a challenge ciphertext.
 
-CPA was introduced as a formalization of semantic security, and the two notions are equivalent for public-key encryption.
+CPA was originally called "polynomial security" by Goldwasser and Micali. It has been shown to be equivalent to semantic security [Goldwasser, Micali (1984); Watanabe, Shikata, Imai (2003)].
 The motivation is straightforward: since a public-key adversary can always encrypt messages of their choice, the scheme must remain secure even under this capability.
 In the context of FHE, CPA security is the default assumption for most constructions, as homomorphic evaluation does not inherently require stronger guarantees.
+
+A classical result from [Bellare, Desai, Jokipii, and Rogaway (FOCS 1997)](https://web.cs.ucdavis.edu/~rogaway/papers/sym-enc.pdf) establishes that the single-challenge (Find-Then-Guess) and multiple-challenge (Left-or-Right) variants of IND-CPA are equivalent.
 
 ## Formal Definition
 
 The IND-CPA security game proceeds as follows:
 
 1. The challenger generates a key pair $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to the adversary $\mathcal{A}$.
-2. $\mathcal{A}$ may encrypt any message of its choice using $pk$.
+2. $\mathcal{A}$ may encrypt any message of its choice using $pk$. In the public-key setting, the adversary implicitly has access to an encryption oracle since it holds $pk$. In the private-key setting, an explicit encryption oracle is provided.
 3. $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$.
 4. The challenger samples a bit $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
 5. $\mathcal{A}$ outputs a guess $b'$.
@@ -58,4 +60,4 @@ For FHE specifically, the standard constructions based on LWE or RLWE assumption
 
 The equivalence between semantic security and indistinguishability was established by [Goldwasser and Micali (1984)](https://people.csail.mit.edu/silvio/Selected%20Scientific%20Papers/Encryption/Probabilistic_Encryption.pdf).
 For a textbook treatment of CPA and its place in the hierarchy of security notions, see Katz and Lindell, *Introduction to Modern Cryptography*.
-In the FHE setting, [Gentry's original thesis (2009)](https://crypto.stanford.edu/craig/craig-thesis.pdf) established CPA as the baseline security target, a convention that has persisted throughout subsequent generations of FHE schemes.
+In the FHE setting, [Gentry (2009)](https://crypto.stanford.edu/craig/craig-thesis.pdf) established CPA as the baseline security target, a convention that has persisted throughout subsequent generations of FHE schemes.

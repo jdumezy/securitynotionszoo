@@ -1,0 +1,66 @@
+---
+title: "Generalized Chosen Ciphertext Attack"
+acronym: "gCCA"
+description: "Slight CCA2 relaxation: the decryption oracle refuses any ciphertext related to the challenge by an efficient decryption-respecting equivalence relation."
+tags: ["Filtered adaptive decryption oracle", "FHE-incompatible"]
+introduced_in:
+  - title: "On the Security of Joint Signature and Encryption"
+    authors: ["Jee Hea An", "Yevgeniy Dodis", "Tal Rabin"]
+    year: 2002
+    link: "https://link.springer.com/chapter/10.1007/3-540-46035-7_6"
+implies: ["RCCA"]
+implied_by: ["CCA2"]
+---
+
+## Overview
+
+Generalized Chosen Ciphertext Attack (gCCA) security, introduced by An, Dodis, and Rabin at Eurocrypt 2002, is a very slight relaxation of CCA2 designed to repair a *definitional* shortcoming of the standard notion.
+The authors observed that the usual CCA2 attack model - in which the adversary is disallowed from submitting only the exact challenge ciphertext $c^*$ to the post-challenge decryption oracle - is not robust to harmless syntactic modifications of a scheme.
+For example, taking a CCA2-secure scheme and appending a trailing useless random bit to every ciphertext immediately breaks CCA2-security: the adversary can flip that bit on the challenge to obtain a *different* ciphertext that still decrypts to $m_b$, ask the oracle to decrypt it, and win trivially. Intuitively, nothing was broken, yet the definition rules the modified scheme "insecure".
+
+The fix proposed by An, Dodis, and Rabin is to parameterize the CCA2 game by an *efficient decryption-respecting equivalence relation* $\mathcal{R}$ over ciphertexts, and to forbid the adversary from submitting any post-challenge query $c'$ with $\mathcal{R}(c^*, c') = \mathsf{true}$ (rather than only $c' = c^*$). Taking $\mathcal{R}$ to be equality recovers standard CCA2; taking $\mathcal{R}$ to identify ciphertexts that differ only in a trailing useless bit fixes the counter-example above. A scheme is gCCA-secure if *some* such relation $\mathcal{R}$ exists for which the parameterized game is won only with negligible advantage.
+
+An, Dodis, and Rabin argue that gCCA suffices for all known applications of CCA2-secure encryption while no longer suffering from the definitional fragility of CCA2 under syntactic rewrites. The same notion was proposed independently - under the name *benign malleability* - by Shoup for the ISO 18033-2 public-key encryption standard.
+
+## Formal Definition
+
+A binary relation $\mathcal{R}$ over the ciphertext space is called *decryption-respecting* if it is reflexive and, for all ciphertexts $c_1, c_2$:
+
+$$
+\mathcal{R}(c_1, c_2) = \mathsf{true} \;\Rightarrow\; \mathsf{Dec}(sk, c_1) = \mathsf{Dec}(sk, c_2).
+$$
+
+The relation may depend on the public key $pk$ but must be efficiently computable without knowledge of $sk$. The IND-gCCA game for an encryption scheme $\Pi = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec})$ with respect to $\mathcal{R}$ proceeds as follows:
+
+1. The challenger generates $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to $\mathcal{A}$.
+2. **Phase 1 (pre-challenge):** $\mathcal{A}$ has access to a decryption oracle $\mathsf{Dec}(sk, \cdot)$ and may submit arbitrary ciphertexts for decryption.
+3. $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$.
+4. The challenger samples $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
+5. **Phase 2 (post-challenge):** $\mathcal{A}$ retains access to the decryption oracle, but any query $c'$ satisfying $\mathcal{R}(c^*, c') = \mathsf{true}$ is rejected.
+6. $\mathcal{A}$ outputs a guess $b'$.
+
+The advantage is defined as:
+
+$$
+\mathsf{Adv}^{\mathsf{IND\text{-}gCCA}}_{\Pi, \mathcal{A}, \mathcal{R}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|
+$$
+
+The scheme $\Pi$ is IND-gCCA-secure if there *exists* an efficient decryption-respecting relation $\mathcal{R}$ such that the above advantage is negligible for every PPT adversary $\mathcal{A}$. Since reflexivity forces $\mathcal{R}$ to rule out at least $c^* = c'$, standard IND-CCA2 is recovered as the special case where $\mathcal{R}$ is the equality relation, which immediately gives $\mathsf{IND\text{-}CCA2} \Rightarrow \mathsf{IND\text{-}gCCA}$.
+
+An, Dodis, and Rabin also introduce a non-malleability analogue, $\mathsf{gNM\text{-}CCA}$, obtained by relaxing the standard non-malleability game in the same way (the adversary is not deemed successful if its output ciphertext is $\mathcal{R}$-equivalent to the challenge). They show that $\mathsf{gNM\text{-}CCA} \equiv \mathsf{IND\text{-}gCCA}$, mirroring the classical equivalence $\mathsf{NM\text{-}CCA2} \equiv \mathsf{IND\text{-}CCA2}$ of [Bellare, Desai, Pointcheval, Rogaway (CRYPTO 1998)](https://www.di.ens.fr/david.pointcheval/Documents/Papers/1998_crypto.pdf), which justifies using indistinguishability as the primary notion.
+
+## Attacks & Relevance
+
+The original motivation for gCCA is *definitional*, not attack-driven: the aim is to rule out scheme-level syntactic triviality (such as the useless-trailing-bit counter-example) while still preventing every meaningful chosen-ciphertext attack that CCA2 prevents. In particular, classical attacks that CCA2 is designed to thwart - Bleichenbacher-style padding oracles, ciphertext mauling via homomorphic structure, and related-ciphertext attacks - remain blocked under gCCA, since any successful attack on gCCA translates into a meaningful non-equivalent decryption query. An, Dodis, and Rabin use gCCA as the right-level abstraction for proving the security of generic signcryption compositions such as $\mathcal{E}t\mathcal{S}$ (encrypt-then-sign) and $\mathcal{S}t\mathcal{E}$ (sign-then-encrypt) in the public-key setting, where CCA2 would have failed the proofs only for the syntactic reasons described above.
+
+In the FHE context, gCCA remains incompatible with homomorphic evaluation for the same reason as CCA2. Given a challenge $c^*$ encrypting $m_b$, the adversary can homomorphically compute $c' \leftarrow \mathsf{Eval}(f, c^*)$ for a function $f$ with $f(m_0) \neq f(m_1)$. Since $c'$ decrypts to $f(m_b) \neq m_b$, no *decryption-respecting* relation $\mathcal{R}$ can satisfy $\mathcal{R}(c^*, c') = \mathsf{true}$, so $c'$ is never rejected by the gCCA oracle and decrypting it trivially reveals $b$. The fundamental tension between adaptive post-challenge decryption access and homomorphic malleability is therefore not resolved by the gCCA relaxation - it is exactly the reason FHE-oriented notions such as vCCA and vCCAD drop the requirement that the filtering relation be decryption-respecting and replace it with a SNARK-based witness extractor over homomorphic derivations.
+
+## Achieving This Notion
+
+Any IND-CCA2-secure encryption scheme is immediately IND-gCCA-secure (under the equality relation), so all the classical CCA2 constructions - Cramer-Shoup, Fujisaki-Okamoto, OAEP, and lattice-based KEMs - yield gCCA-secure schemes. The converse does not hold: An, Dodis, and Rabin exhibit gCCA-secure schemes that are not CCA2-secure, precisely the "append a useless bit to a CCA2-secure scheme" family and similar syntactic modifications. They remark, however, that they are not aware of any *natural* encryption scheme that sits in the gap between gCCA and CCA2 - the separating examples are always obtained by artificially degrading a CCA2-secure scheme.
+
+As a standardized instance, Shoup's *benign malleability* variant in ISO 18033-2 uses a concrete efficient relation $\mathcal{R}$ that identifies ciphertexts differing only in operationally meaningless components, providing a practical gCCA-secure encryption standard without requiring strict CCA2.
+
+## Further Reading
+
+The gCCA notion was introduced by [An, Dodis, and Rabin (Eurocrypt 2002)](https://link.springer.com/chapter/10.1007/3-540-46035-7_6) as part of their formal study of signcryption, where it was used to prove the security of generic encrypt-then-sign and sign-then-encrypt compositions in the public-key setting (under the original name *generalized CCA2*, denoted $\mathsf{gCCA2}$). The closely related *benign malleability* formulation was proposed by Shoup for ISO 18033-2. For the classical equivalence between indistinguishability and non-malleability that gCCA preserves (in the form $\mathsf{gNM\text{-}CCA} \equiv \mathsf{IND\text{-}gCCA}$), see [Bellare, Desai, Pointcheval, and Rogaway (CRYPTO 1998)](https://www.di.ens.fr/david.pointcheval/Documents/Papers/1998_crypto.pdf). For the FHE-oriented reframing of ciphertext-filtering relaxations, where the decryption-respecting restriction is dropped in favour of a SNARK-based extractor over homomorphic evaluations, see [Manulis and Nguyen (Eurocrypt 2024)](https://eprint.iacr.org/2024/202) on vCCA and [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) on vCCAD.

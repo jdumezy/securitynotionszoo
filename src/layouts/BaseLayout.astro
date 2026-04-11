@@ -57,21 +57,21 @@ const {
         <nav class="flex justify-between items-center">
           <a
             href="/"
-            class="flex items-center gap-3 text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors"
+            class="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors min-w-0"
           >
-            <Logo class="w-8 h-8 text-current" />
-            SecurityNotionsZoo
+            <Logo class="w-7 h-7 sm:w-8 sm:h-8 text-current shrink-0" />
+            <span class="truncate">SecurityNotionsZoo</span>
           </a>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3 sm:gap-4 shrink-0">
             <a
               href="/about"
-              class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+              class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
               >About</a
             >
             <a
               href="https://github.com/jdumezy/securitynotionszoo"
               target="_blank"
-              class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+              class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
               >GitHub</a
             >
             <ThemeToggle />

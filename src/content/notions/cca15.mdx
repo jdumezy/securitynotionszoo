@@ -1,0 +1,78 @@
+---
+title: "Adaptive Chosen Ciphertext Decryption/Verification Attack"
+acronym: "CCA1.5"
+description: "Strengthens CCA1 with a post-challenge ciphertext verification oracle; strictly between CCA1 and CCA2, and strictly stronger than CCVA2."
+tags: ["Pre-challenge decryption oracle", "Post-challenge verification oracle", "FHE-compatible"]
+introduced_in:
+  - title: "Indistinguishability against Chosen Ciphertext Verification Attack Revisited: The Complete Picture"
+    authors: ["Angsuman Das", "Sabyasachi Dutta", "Avishek Adhikari"]
+    year: 2013
+    link: "https://link.springer.com/chapter/10.1007/978-3-642-41227-1_6"
+implies: ["CCA1", "CCVA2"]
+implied_by: ["vCCA"]
+---
+
+## Overview
+
+Adaptive Chosen Ciphertext Decryption/Verification Attack (CCA1.5) security, introduced by Das, Dutta, and Adhikari at ProvSec 2013, is an indistinguishability notion that interpolates between CCA1 and CCA2 by giving the adversary a *full decryption oracle* during the first (pre-challenge) query phase and a weaker *ciphertext verification oracle* during the second (post-challenge) query phase. The verification oracle answers whether a queried ciphertext is valid - i.e. decrypts to a non-$\bot$ plaintext - without returning the plaintext itself.
+
+The motivation is that this two-phase model more faithfully reflects many practical adversaries. After a temporary "lunchtime" window of full decryption access (as in CCA1), an attacker often retains only indirect feedback from a remote decryption device - for example, the network-level accept/reject signal exploited by Bleichenbacher's attack on RSA-PKCS#1 and by the Hall-Goldberg-Schneier "reaction attack" on the McEliece and Ajtai-Dwork cryptosystems. CCA1.5 captures exactly this setting: an adversary who once had full decryption access and now can only probe whether ciphertexts are "legal".
+
+Das et al. showed that CCA1.5 sits strictly between CCA1 and CCA2 in the indistinguishability hierarchy, i.e. $\mathsf{IND\text{-}CCA1} \prec \mathsf{IND\text{-}CCA1.5} \prec \mathsf{IND\text{-}CCA2}$, and that it is strictly stronger than the CCVA notions of Pandey, Sarkar, and Jhanwar, i.e. $\mathsf{IND\text{-}CCVA2} \prec \mathsf{IND\text{-}CCA1.5}$. The main technical contribution of the paper is to complete the "implication versus separation" picture among CPA, CCA1, CCA2, CCVA1, CCVA2, RCCA2, and the new CCA1.5 notion, resolving several previously open implications as strict separations.
+
+## Formal Definition
+
+The IND-CCA1.5 game is defined for a public-key encryption scheme $\Pi = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec})$ in which $\mathsf{Dec}$ returns $\bot$ on any ciphertext outside $\mathsf{Enc}_{pk}(\mathcal{M})$. It proceeds as follows:
+
+1. **Setup.** The challenger generates $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to $\mathcal{A}$.
+2. **Phase 1 (pre-challenge):** $\mathcal{A}$ has access to a full decryption oracle $\mathsf{Dec}(sk, \cdot)$ and may submit arbitrary ciphertexts for decryption.
+3. **Challenge:** $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$. The challenger samples $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
+4. **Phase 2 (post-challenge):** $\mathcal{A}$ has access to a *ciphertext verification oracle* $\mathcal{O}_{1.5}(\cdot)$ which, on input $c$, responds
+
+$$
+\mathcal{O}_{1.5}(c) = \begin{cases} \text{``valid''}, & \text{if } c = c^*, \\ \text{``valid''}, & \text{if } \mathsf{Dec}(sk, c) \neq \bot, \\ \text{``invalid''}, & \text{if } \mathsf{Dec}(sk, c) = \bot. \end{cases}
+$$
+
+The explicit "$c = c^*$" bypass forces the oracle to answer "valid" on the challenge ciphertext itself, independently of what $\mathsf{Dec}(sk, c^*)$ actually returns. This matters as soon as perfect correctness is not available (see the remark below).
+
+5. **Guess:** $\mathcal{A}$ outputs a guess $b'$.
+
+The advantage is defined as:
+
+$$
+\mathsf{Adv}^{\mathsf{IND\text{-}CCA1.5}}_{\Pi, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|
+$$
+
+The scheme is IND-CCA1.5 secure if this advantage is negligible for all PPT adversaries.
+
+Compared to CCA2, Phase 2 is weakened from a full decryption oracle to a *single-bit* validity indicator. Compared to CCA1, Phase 2 is strengthened from no oracle at all to that validity indicator. Compared to CCVA2, Phase 1 is strengthened from a verification oracle to a full decryption oracle. This is exactly the setting in which an attacker first has privileged access to a decryption box and then only retains a "judge" or "reaction" signal from a remote server.
+
+**Remark (on the challenge-ciphertext bypass).** Not all papers that consider CCA1.5 consistently include the "$c = c^*$ $\Rightarrow$ valid" test in the verification oracle. [Das et al. (ProvSec 2013)](https://link.springer.com/chapter/10.1007/978-3-642-41227-1_6) and [Manulis and Nguyen (Eurocrypt 2024)](https://eprint.iacr.org/2024/202) omit it, implicitly relying on the perfect correctness assumption $\Pr[\mathsf{Dec}(sk, c^*) \neq \bot] = 1$, under which the bypass is redundant. [Renard (PhD thesis, 2025)](https://theses.hal.science/tel-05421880v1/file/157007_RENARD_2025_archivage.pdf) (Remark 4.1) points out that without the bypass and when correctness only holds with overwhelming-but-not-absolute probability, it is easy to build a scheme that is IND-CCA2 secure but *not* IND-CCA1.5 secure - which is incompatible with the spirit of CCA1.5 as a strict relaxation of CCA2. We follow Renard's formulation above and include the bypass explicitly.
+
+## Attacks & Relevance
+
+The CCA1.5 model is motivated by *network-style* adversaries: a protocol that returns distinct error codes (or exhibits timing differences) when a malformed ciphertext is submitted leaks exactly one bit per query - the validity bit captured by $\mathcal{O}_{1.5}$. Historic examples include Bleichenbacher's attack on RSA-PKCS#1 (CRYPTO 1998), the Hall-Goldberg-Schneier reaction attacks on the McEliece and Ajtai-Dwork cryptosystems (ICICS 1999), and the Joye-Quisquater-Yung attack on EPOC (CT-RSA 2001). In all of these, the adversary does not recover plaintexts directly from a queried ciphertext; instead it adaptively probes a validity check. CCA1.5 formalises security against precisely this class of remote adversaries in the regime where they have also had prior lunchtime-level decryption access.
+
+Beyond the motivating model, Das et al. complete the relationship map among the existing indistinguishability notions by proving the following strict separations (in addition to the trivial implications):
+
+- $\mathsf{IND\text{-}CCVA2} \not\Rightarrow \mathsf{IND\text{-}CCA1}$ (Theorem 1), from which $\mathsf{IND\text{-}CCVA1} \not\Rightarrow \mathsf{IND\text{-}CCA1}$ and $\mathsf{IND\text{-}CPA} \not\Rightarrow \mathsf{IND\text{-}CCA1}$ follow as corollaries.
+- $\mathsf{IND\text{-}CPA} \not\Rightarrow \mathsf{IND\text{-}CCVA1}$ (Theorem 2), closing a question that had been open since Krohn's thesis for the class of schemes in which $\mathsf{Dec}$ returns $\bot$ on every invalid ciphertext.
+- $\mathsf{IND\text{-}CCA1} \not\Rightarrow \mathsf{IND\text{-}CCA1.5}$ and $\mathsf{IND\text{-}CCVA2} \not\Rightarrow \mathsf{IND\text{-}CCA1.5}$ (Corollaries 3 and 4).
+- $\mathsf{IND\text{-}CCVA2} \wedge \mathsf{IND\text{-}CCA1} \not\Rightarrow \mathsf{IND\text{-}CCA1.5}$ (Theorem 3): even the *conjunction* of a pre-challenge decryption oracle and a both-phase verification oracle does not suffice, ruling out a naive decomposition of the notion into its two individual oracles.
+- $\mathsf{IND\text{-}CCA1.5} \not\Rightarrow \mathsf{IND\text{-}CCA2}$ (Theorem 5), instantiated by the Cramer-Shoup Lite scheme under the DDH assumption.
+
+They also show the upward direction $\mathsf{IND\text{-}RCCA2} \Rightarrow \mathsf{IND\text{-}CCA1.5}$ (Lemma 1), which transitively gives $\mathsf{IND\text{-}CCA2} \Rightarrow \mathsf{IND\text{-}CCA1.5}$ as well.
+
+## Achieving This Notion
+
+The main constructive result of the paper is that CCA1.5 is achievable by *group homomorphic* cryptosystems. Starting from the generic group-homomorphic framework of [Armknecht, Katzenbeisser, and Peter (DCC 2012)](https://doi.org/10.1007/s10623-011-9601-2) - which gives CCA1-secure instantiations of Paillier and GBD under the Splitting Oracle-Assisted Subgroup Membership (SOAP) assumption - Das et al. show that a slight modification (essentially prepending a one-bit tag marking the ciphertext as "honestly generated") turns any such IND-CCA1-secure group homomorphic scheme into an IND-CCA1.5-secure one while remaining group homomorphic. At the time of publication this was the strongest security level known to be achievable by any group homomorphic cryptosystem, the previous best being CCA1.
+
+Beyond the homomorphic setting, they also prove that Cramer-Shoup Lite (already known to be IND-CCA1 and IND-CCVA2 secure) is additionally IND-CCA1.5 secure under DDH, and give a non-homomorphic variant of Cramer-Shoup Lite to show that the class of IND-CCA1.5-secure schemes is not limited to (group) homomorphic constructions.
+
+In the FHE setting, CCA1.5 is achievable via vCCA. Naively, an unfiltered verification oracle would indeed be dangerous for a homomorphic scheme: given $c^*$, an adversary could evaluate $c' = \mathsf{Eval}(f, c^*)$ and ask whether $c'$ is valid, potentially distinguishing $m_0$ from $m_1$ via plaintext-dependent decryption failures. However, this attack is ruled out as soon as the scheme is IND-vCCA secure in the correct regime. The reduction exploits the fact that vCCA's witness extractor $\mathsf{Extract}$ is a *public* algorithm (part of the scheme) that the CCA1.5-to-vCCA reducer can run on its own without consulting any oracle: on input $c$, the reducer first runs $\mathsf{Extract}(c)$ locally and inspects whether the extracted input ciphertexts contain any challenge ciphertext. If they do, the reducer answers "valid" directly - under correctness, $c = \mathsf{Eval}(f, c^*, \ldots)$ decrypts to the non-$\bot$ value $f(m_b, \ldots)$ regardless of $b$. If they do not, the reducer forwards $c$ to its own vCCA decryption oracle, which will return a plaintext (mapped to "valid") or $\bot$ (mapped to "invalid"). Hence, under the correctness assumption, $\mathsf{IND\text{-}vCCA} \Rightarrow \mathsf{IND\text{-}CCA1.5}$, and the SNARK-based FHE constructions of [Manulis and Nguyen (Eurocrypt 2024)](https://eprint.iacr.org/2024/202) yield IND-CCA1.5-secure FHE as a direct corollary. In the approximate (general) regime where correctness may fail, the same reasoning goes through with the stronger [vCCAD](https://eprint.iacr.org/2024/812) notion in place of vCCA.
+
+A note on formulations. The formal definition above is the classical, *single-argument* verification oracle $\mathcal{O}_{1.5}(c)$ of Das et al. In the FHE context, [Walter (ePrint 2024/1207)](https://eprint.iacr.org/2024/1207) uses a slightly different Definition 8 in which the validation oracle takes $(c, f, (c_1, \ldots, c_\ell))$ and answers whether the extended decryption $\mathsf{Dec}(c, f, (c_1, \ldots, c_\ell))$ returns $\bot$. The two are semantically equivalent for standard FHE under correctness (the extended oracle simply threads the computation description through to $\mathsf{Dec}$), but they differ in presentation and in what an adversary must supply with each query.
+
+## Further Reading
+
+The CCA1.5 notion was introduced by [Das, Dutta, and Adhikari (ProvSec 2013)](https://link.springer.com/chapter/10.1007/978-3-642-41227-1_6), which also resolves the remaining open implications and separations among CPA, CCA1, CCA2, CCVA1, CCVA2, and RCCA2. The ciphertext verification oracle itself was previously formalised by [Pandey, Sarkar, and Jhanwar (SPACE 2012)](https://link.springer.com/chapter/10.1007/978-3-642-34416-9_5) as CCVA, building on earlier informal notions of "illegal ciphertext attack" and "reaction attack". For the group-homomorphic framework used in the CCA1.5 construction, see [Armknecht, Katzenbeisser, and Peter (DCC 2012)](https://doi.org/10.1007/s10623-011-9601-2). For the FHE-oriented reframing of CCA1.5, where the post-challenge validity check is replaced by a SNARK-based witness extractor, see [Manulis and Nguyen (Eurocrypt 2024)](https://eprint.iacr.org/2024/202) on vCCA and [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) on vCCAD.

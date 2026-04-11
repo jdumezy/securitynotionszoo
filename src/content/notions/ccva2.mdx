@@ -1,0 +1,66 @@
+---
+title: "Chosen Ciphertext Verification Attack 2"
+acronym: "CCVA2"
+description: "CPA plus a both-phase ciphertext verification oracle; strictly between CCVA1 and CCA2, not trivially implied by CCA1."
+tags: ["Adaptive verification oracle", "FHE-compatible"]
+introduced_in:
+  - title: "Relaxing IND-CCA: Indistinguishability against Chosen Ciphertext Verification Attack"
+    authors: ["Sumit Kumar Pandey", "Santanu Sarkar", "Mahabir Prasad Jhanwar"]
+    year: 2012
+    link: "https://link.springer.com/chapter/10.1007/978-3-642-34416-9_5"
+implies: ["CCVA1"]
+implied_by: ["CCA1.5"]
+---
+
+## Overview
+
+Adaptive Chosen Ciphertext Verification Attack (CCVA2) security, also known as IND-CCVA2 or simply IND-CCVA, augments IND-CPA by granting the adversary access to a *ciphertext verification oracle* during **both** the pre-challenge and post-challenge query phases. On input $c$, the verification oracle replies "valid" if $c$ decrypts to a message in $\mathcal{M}$ and "invalid" if it decrypts to $\bot$; it never returns the plaintext itself. The challenge ciphertext $c^*$ may also be queried and is always "valid".
+
+Historically, the notion was first formalised by Krohn in a 1999 Harvard undergraduate thesis as *illegal ciphertext attack* (IND-ICA), motivated by practical attacks that leak a single validity bit per query - Bleichenbacher's attack on RSA-PKCS#1 (CRYPTO 1998), the Hall-Goldberg-Schneier "reaction attack" on the McEliece and Ajtai-Dwork cryptosystems (ICICS 1999), and the Joye-Quisquater-Yung attack on EPOC (CT-RSA 2001). [Pandey, Sarkar, and Jhanwar (SPACE 2012)](https://link.springer.com/chapter/10.1007/978-3-642-34416-9_5) subsequently re-introduced the notion under the name CCVA and focused exclusively on the adaptive case; what they call CCVA corresponds to CCVA2 here. The full implication and separation picture relating CCVA2 to the other CCA-style notions was later established by [Das, Dutta, and Adhikari (ProvSec 2013)](https://link.springer.com/chapter/10.1007/978-3-642-41227-1_6).
+
+CCVA2 sits strictly between CCVA1 and CCA2 in the indistinguishability hierarchy: the trivial chain $\mathsf{IND\text{-}CCA2} \Rightarrow \mathsf{IND\text{-}CCVA2} \Rightarrow \mathsf{IND\text{-}CCVA1}$ holds by weakening each oracle in turn. CCVA2 is also *not* implied by CCA1 as a trivial weakening: Das et al. proved the one explicit separation $\mathsf{IND\text{-}CCVA2} \not\Rightarrow \mathsf{IND\text{-}CCA1}$ (Theorem 1) - Construction I of their paper is an explicit scheme that is IND-CCVA2 but not IND-CCA1 - and the trivial chain of implications from CCA1 only gives $\mathsf{IND\text{-}CCA1} \Rightarrow \mathsf{IND\text{-}CCVA1}$, not $\mathsf{IND\text{-}CCA1} \Rightarrow \mathsf{IND\text{-}CCVA2}$. Das et al. further strengthen the separation in the other direction by showing $\mathsf{IND\text{-}CCVA2} \wedge \mathsf{IND\text{-}CCA1} \not\Rightarrow \mathsf{IND\text{-}CCA1.5}$ (Theorem 3): even the conjunction of a pre-challenge decryption oracle and a both-phase verification oracle is not enough to reach the intermediate CCA1.5 notion. A full strict separation between CCA1 and CCVA2 is, to our knowledge, not stated explicitly in the paper.
+
+## Formal Definition
+
+The IND-CCVA2 game is defined for a public-key encryption scheme $\Pi = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec})$ in which $\mathsf{Dec}$ returns $\bot$ on any ciphertext outside $\mathsf{Enc}_{pk}(\mathcal{M})$:
+
+1. **Setup.** The challenger generates $(pk, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and gives $pk$ to $\mathcal{A}$.
+2. **Phase 1 (pre-challenge):** $\mathcal{A}$ has access to a *ciphertext verification oracle* $\mathcal{O}_V(\cdot)$ defined by
+
+$$
+\mathcal{O}_V(c) = \begin{cases} \text{``valid''}, & \text{if } \mathsf{Dec}(sk, c) \neq \bot, \\ \text{``invalid''}, & \text{if } \mathsf{Dec}(sk, c) = \bot. \end{cases}
+$$
+
+3. **Challenge:** $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$. The challenger samples $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
+4. **Phase 2 (post-challenge):** $\mathcal{A}$ **retains** access to $\mathcal{O}_V(\cdot)$ and may query arbitrary ciphertexts, including the challenge ciphertext $c^*$ itself (which always returns "valid").
+5. **Guess:** $\mathcal{A}$ outputs a guess $b'$.
+
+The advantage is defined as:
+
+$$
+\mathsf{Adv}^{\mathsf{IND\text{-}CCVA2}}_{\Pi, \mathcal{A}}(\lambda) = \left| \Pr[b' = b] - \frac{1}{2} \right|
+$$
+
+The scheme is IND-CCVA2 secure if this advantage is negligible for all PPT adversaries.
+
+As with CCVA1, the notion is only meaningful when $\mathsf{Enc}_{pk}(\mathcal{M}) \subsetneq \mathcal{C}$. For full-domain schemes such as plain ElGamal or Paillier, every element of $\mathcal{C}$ is a valid encryption, the verification oracle is the constant "valid" function, and IND-CPA, IND-CCVA1, and IND-CCVA2 all coincide [Das et al., Remark 2].
+
+## Attacks & Relevance
+
+The CCVA2 adversary is the classical *reaction* or *judge-oracle* attacker: someone who submits ciphertexts to a remote decryption endpoint and observes only accept/reject feedback, adaptively both before and after seeing the target. This is the natural abstraction of Bleichenbacher's attack, the Hall-Goldberg-Schneier reaction attacks, and the Joye-Quisquater-Yung attack on EPOC, all of which succeed with only a one-bit validity signal.
+
+In contrast to CCA2, which requires resistance against a full post-challenge decryption oracle, CCVA2 only demands resistance to a post-challenge validity check. This weaker requirement makes CCVA2 a useful stepping stone in the hierarchy: many schemes that fail CCA2 still satisfy CCVA2 (e.g. the Cramer-Shoup Lite scheme under DDH), and schemes whose ciphertext space already coincides with $\mathcal{C}$ satisfy CCVA2 as soon as they are CPA-secure.
+
+The non-trivial relationship with CCA1 is the most subtle feature of CCVA2 and is what motivates the CCA1.5 notion proposed by Das et al.: CCVA2 does not imply CCA1 (Theorem 1), no trivial implication goes from CCA1 to CCVA2, and even the conjunction of CCA1 and CCVA2 falls short of CCA1.5 (Theorem 3).
+
+## Achieving This Notion
+
+CCVA2 security is trivially implied by CCA2 (a decryption oracle subsumes a verification oracle in both phases) and by CCA1.5 (whose Phase 1 decryption oracle is strictly stronger than the CCVA2 Phase 1 verification oracle, and whose Phase 2 verification oracle coincides with that of CCVA2). It is therefore also implied by every notion stronger than CCA1.5 in the taxonomy, including vCCA and vCCAD.
+
+For full-domain schemes ($\mathsf{Enc}_{pk}(\mathcal{M}) = \mathcal{C}$) such as plain ElGamal or Paillier, CCVA2 collapses to CPA and is achieved as soon as IND-CPA holds. Beyond full-domain schemes, the Cramer-Shoup Lite scheme is known to be IND-CCVA2 secure under the DDH assumption, and is used by Das et al. as a witness for $\mathsf{IND\text{-}CCA1.5} \not\Rightarrow \mathsf{IND\text{-}CCA2}$: Cramer-Shoup Lite is simultaneously IND-CCA1, IND-CCVA2, and IND-CCA1.5, but not IND-CCA2.
+
+In the FHE setting, a naive CCVA2 oracle would be dangerous: given a challenge ciphertext $c^*$, an adversary could homomorphically evaluate a function $f$ to obtain $c' = \mathsf{Eval}(f, c^*)$ whose validity depends on the underlying plaintext - for example via noise growth that triggers a decryption failure on one of the two challenge plaintexts but not on the other - and try to recover the challenge bit from the validity answer. Under the standard correctness assumption, however, $\mathsf{Dec}(c')$ is always non-$\bot$, so such an attack does not go through on a correctly-evaluated, noise-bounded scheme. In practice CCVA2 is therefore achievable for FHE via the same route as CCA1.5: any IND-vCCA-secure scheme is IND-CCVA2-secure under correctness, because CCA1.5 $\Rightarrow$ CCVA2 trivially and vCCA $\Rightarrow$ CCA1.5 (Manulis–Nguyen). CCA2 remains out of reach for homomorphic schemes - it is the *decryption* oracle, not the verification oracle, that is incompatible with homomorphic evaluation.
+
+## Further Reading
+
+The CCVA notion was first formalised by Krohn in a 1999 Harvard undergraduate thesis as *illegal ciphertext attack* (IND-ICA). It was later re-introduced and named CCVA by [Pandey, Sarkar, and Jhanwar (SPACE 2012)](https://link.springer.com/chapter/10.1007/978-3-642-34416-9_5), who considered only the adaptive case. [Das, Dutta, and Adhikari (ProvSec 2013)](https://link.springer.com/chapter/10.1007/978-3-642-41227-1_6) completed the implication/separation picture among CPA, CCA1, CCA2, CCVA1, and CCVA2, proved the key separations $\mathsf{IND\text{-}CCVA2} \not\Rightarrow \mathsf{IND\text{-}CCA1}$ and $\mathsf{IND\text{-}CCVA2} \wedge \mathsf{IND\text{-}CCA1} \not\Rightarrow \mathsf{IND\text{-}CCA1.5}$, and introduced the intermediate CCA1.5 notion between CCA1 and CCA2. CCVA-style attacks in the symmetric-key setting are discussed by Hu, Sun, and Jiang (Science China 2009).
