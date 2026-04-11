@@ -395,10 +395,16 @@ const categoryLegend: Array<{
       )
     }
 
-    <div id="map-viewport" class="absolute inset-0 origin-top-left">
+    <div
+      id="map-viewport"
+      class="absolute top-0 left-0 origin-top-left"
+      style="width: 1000px; height: 1200px;"
+    >
       <svg
         id="map-svg"
-        class="block absolute inset-0 w-full h-full text-slate-400 dark:text-slate-600"
+        class="block absolute top-0 left-0 text-slate-400 dark:text-slate-600"
+        width="1000"
+        height="1200"
         viewBox="0 0 1000 1200"
         preserveAspectRatio="xMidYMid meet"
       >
@@ -500,8 +506,8 @@ const categoryLegend: Array<{
   <p
     class="mt-3 text-xs text-slate-500 dark:text-slate-400 text-center transition-colors"
   >
-    Tap a labelled arrow or label for details. Scroll or use the + / -
-    buttons to zoom. Drag an empty area to pan.
+    Tap a labelled arrow or label for details. Scroll, pinch, or use the
+    + / - buttons to zoom. Drag an empty area to pan.
   </p>
 
   <!-- Side panel -->
@@ -669,14 +675,16 @@ const categoryLegend: Array<{
         const el = nodeEls[acronym];
         const pos = positions[acronym];
         if (!el || !pos) return;
-        const pctX = (pos.x / VIEW_W) * 100;
-        const pctY = (pos.y / VIEW_H) * 100;
-        const pctW = (NODE_W / VIEW_W) * 100;
-        const pctH = (NODE_H / VIEW_H) * 100;
-        el.style.left = `calc(${pctX}% - ${pctW / 2}%)`;
-        el.style.top = `calc(${pctY}% - ${pctH / 2}%)`;
-        el.style.width = `${pctW}%`;
-        el.style.height = `${pctH}%`;
+        // The map-viewport has a fixed pixel size matching the SVG viewBox
+        // (VIEW_W x VIEW_H), so node positions can be expressed directly in
+        // those pixel coordinates. Responsive scaling happens via the
+        // zoom/pan CSS transform applied to the viewport, not via the node
+        // layout itself — this guarantees mobile and desktop render the
+        // nodes at the same physical size once the user zooms in.
+        el.style.left = `${pos.x - NODE_W / 2}px`;
+        el.style.top = `${pos.y - NODE_H / 2}px`;
+        el.style.width = `${NODE_W}px`;
+        el.style.height = `${NODE_H}px`;
       };
 
       for (const n of data.notions) {
@@ -941,26 +949,42 @@ const categoryLegend: Array<{
       ) as HTMLElement | null;
       if (!canvas || !viewport) return;
 
-      // Viewport state: zoom + pan (applied as a CSS transform to #map-viewport)
+      // Viewport state: zoom + pan (applied as a CSS transform to
+      // #map-viewport). The viewport itself has a fixed pixel size of
+      // VIEW_W x VIEW_H, so at zoom = 1 one screen pixel equals one viewBox
+      // unit. Initial zoom is computed from the canvas rect so the full map
+      // fits into the canvas on first render.
       let zoom = 1;
       let tx = 0;
       let ty = 0;
-      const MIN_ZOOM = 0.4;
-      const MAX_ZOOM = 3;
+      const MIN_ZOOM = 0.15;
+      const MAX_ZOOM = 4;
       const applyViewport = () => {
         viewport.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
       };
-      applyViewport();
 
-      // Convert a screen-pixel delta to a viewBox-user-unit delta, accounting
-      // for the current canvas size and zoom level.
-      const pxDeltaToUser = (dxPx: number, dyPx: number) => {
+      const fitToCanvas = () => {
         const rect = canvas.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return { dx: 0, dy: 0 };
-        return {
-          dx: (dxPx / (rect.width * zoom)) * VIEW_W,
-          dy: (dyPx / (rect.height * zoom)) * VIEW_H,
-        };
+        if (rect.width === 0 || rect.height === 0) return;
+        const fit = Math.min(rect.width / VIEW_W, rect.height / VIEW_H);
+        zoom = fit;
+        tx = (rect.width - VIEW_W * zoom) / 2;
+        ty = (rect.height - VIEW_H * zoom) / 2;
+        applyViewport();
+      };
+      fitToCanvas();
+      // On viewport resize, re-fit so the map never ends up stranded outside
+      // the canvas. We don't preserve the user's current zoom/pan — a resize
+      // is rare enough (device rotation, window resize) that resetting to
+      // the fit view is the saner default.
+      window.addEventListener("resize", fitToCanvas);
+
+      // Convert a screen-pixel delta to a viewBox-user-unit delta. The
+      // viewport is fixed at VIEW_W x VIEW_H pixels, so one viewport pixel
+      // equals one viewBox unit — we just need to undo the CSS zoom.
+      const pxDeltaToUser = (dxPx: number, dyPx: number) => {
+        if (zoom === 0) return { dx: 0, dy: 0 };
+        return { dx: dxPx / zoom, dy: dyPx / zoom };
       };
 
       interface NodeDragState {
@@ -1060,7 +1084,7 @@ const categoryLegend: Array<{
         }
       }
 
-      // ---------- Canvas pan ----------
+      // ---------- Canvas pan + pinch ----------
       interface PanState {
         pointerId: number;
         startClientX: number;
@@ -1069,59 +1093,152 @@ const categoryLegend: Array<{
         startTy: number;
         moved: boolean;
       }
+      interface PinchState {
+        startDist: number;
+        startZoom: number;
+        startTx: number;
+        startTy: number;
+        startCenterX: number;
+        startCenterY: number;
+      }
       let panState: PanState | null = null;
+      let pinchState: PinchState | null = null;
+      // Track every pointer currently down on the canvas so we can detect
+      // two-finger pinch gestures. Keyed by pointerId; values are the
+      // latest client-space position of that pointer.
+      const activePointers = new Map<number, { x: number; y: number }>();
+
+      // Only pointerdowns that hit the empty canvas (not nodes, arrows,
+      // labels or control buttons) should start a pan / pinch. Returning
+      // false here lets the underlying element handle the pointerdown
+      // normally (e.g. node drag, edge click).
+      const canvasTargetIsInteractive = (target: EventTarget | null) => {
+        const el = target as HTMLElement | null;
+        if (!el) return false;
+        return !!(
+          el.closest(".map-node") ||
+          el.closest(".map-edge-group") ||
+          el.closest(".map-edge-label") ||
+          el.closest("button") ||
+          el.closest("a")
+        );
+      };
 
       canvas.addEventListener("pointerdown", (e) => {
-        // Only initiate a pan on pointerdowns directly on the canvas (not
-        // on a node, edge, label, or any control button). If a node's
-        // pointerdown already ran, nodeDrag is set and we bail.
         if (nodeDrag) return;
-        const target = e.target as HTMLElement | null;
-        if (!target) return;
-        // Any clickable child of the canvas that we don't want pan to
-        // swallow should match one of these selectors.
-        if (target.closest(".map-node")) return;
-        if (target.closest(".map-edge-group")) return;
-        if (target.closest(".map-edge-label")) return;
-        if (target.closest("button")) return;
-        if (target.closest("a")) return;
+        if (canvasTargetIsInteractive(e.target)) return;
         e.preventDefault();
         try {
           canvas.setPointerCapture(e.pointerId);
         } catch {}
-        panState = {
-          pointerId: e.pointerId,
-          startClientX: e.clientX,
-          startClientY: e.clientY,
-          startTx: tx,
-          startTy: ty,
-          moved: false,
-        };
-        canvas.style.cursor = "grabbing";
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (activePointers.size >= 2) {
+          // Second finger down: transition from pan to pinch. We ignore any
+          // additional pointers beyond the first two.
+          panState = null;
+          const pts = Array.from(activePointers.values()).slice(0, 2);
+          const rect = canvas.getBoundingClientRect();
+          const dist =
+            Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) || 1;
+          pinchState = {
+            startDist: dist,
+            startZoom: zoom,
+            startTx: tx,
+            startTy: ty,
+            startCenterX: (pts[0].x + pts[1].x) / 2 - rect.left,
+            startCenterY: (pts[0].y + pts[1].y) / 2 - rect.top,
+          };
+          canvas.style.cursor = "";
+        } else {
+          panState = {
+            pointerId: e.pointerId,
+            startClientX: e.clientX,
+            startClientY: e.clientY,
+            startTx: tx,
+            startTy: ty,
+            moved: false,
+          };
+          canvas.style.cursor = "grabbing";
+        }
       });
 
       canvas.addEventListener("pointermove", (e) => {
-        if (!panState || panState.pointerId !== e.pointerId) return;
-        const dxPx = e.clientX - panState.startClientX;
-        const dyPx = e.clientY - panState.startClientY;
-        if (!panState.moved && Math.hypot(dxPx, dyPx) > 3) {
-          panState.moved = true;
+        if (!activePointers.has(e.pointerId)) return;
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pinchState && activePointers.size >= 2) {
+          const pts = Array.from(activePointers.values()).slice(0, 2);
+          const dist = Math.hypot(
+            pts[1].x - pts[0].x,
+            pts[1].y - pts[0].y,
+          );
+          const rect = canvas.getBoundingClientRect();
+          const newZoom = Math.max(
+            MIN_ZOOM,
+            Math.min(MAX_ZOOM, pinchState.startZoom * (dist / pinchState.startDist)),
+          );
+          const ratio = newZoom / pinchState.startZoom;
+          // Follow the pinch midpoint: the content point that was under the
+          // initial midpoint should remain under the current midpoint, so
+          // the gesture feels anchored to the fingers.
+          const curCenterX = (pts[0].x + pts[1].x) / 2 - rect.left;
+          const curCenterY = (pts[0].y + pts[1].y) / 2 - rect.top;
+          tx =
+            curCenterX - (pinchState.startCenterX - pinchState.startTx) * ratio;
+          ty =
+            curCenterY - (pinchState.startCenterY - pinchState.startTy) * ratio;
+          zoom = newZoom;
+          applyViewport();
+          return;
         }
-        tx = panState.startTx + dxPx;
-        ty = panState.startTy + dyPx;
-        applyViewport();
+
+        if (panState && panState.pointerId === e.pointerId) {
+          const dxPx = e.clientX - panState.startClientX;
+          const dyPx = e.clientY - panState.startClientY;
+          if (!panState.moved && Math.hypot(dxPx, dyPx) > 3) {
+            panState.moved = true;
+          }
+          tx = panState.startTx + dxPx;
+          ty = panState.startTy + dyPx;
+          applyViewport();
+        }
       });
 
-      const endPan = (e: PointerEvent) => {
-        if (!panState || panState.pointerId !== e.pointerId) return;
+      const endPointer = (e: PointerEvent) => {
+        if (!activePointers.has(e.pointerId)) return;
         try {
           canvas.releasePointerCapture(e.pointerId);
         } catch {}
-        panState = null;
-        canvas.style.cursor = "";
+        activePointers.delete(e.pointerId);
+        if (pinchState && activePointers.size < 2) {
+          // Pinch finished. If one finger remains, seed a fresh pan from
+          // its current position so the surviving touch keeps dragging the
+          // map without a jump.
+          pinchState = null;
+          if (activePointers.size === 1) {
+            const [remainingId, pos] = Array.from(
+              activePointers.entries(),
+            )[0];
+            panState = {
+              pointerId: remainingId,
+              startClientX: pos.x,
+              startClientY: pos.y,
+              startTx: tx,
+              startTy: ty,
+              moved: true,
+            };
+            canvas.style.cursor = "grabbing";
+          }
+          return;
+        }
+        if (panState && panState.pointerId === e.pointerId) {
+          panState = null;
+          canvas.style.cursor = "";
+        }
       };
-      canvas.addEventListener("pointerup", endPan);
-      canvas.addEventListener("pointercancel", endPan);
+      canvas.addEventListener("pointerup", endPointer);
+      canvas.addEventListener("pointercancel", endPointer);
 
       // ---------- Wheel zoom (zoom around cursor) ----------
       canvas.addEventListener(
@@ -1179,10 +1296,7 @@ const categoryLegend: Array<{
         });
       document.getElementById("map-reset")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        zoom = 1;
-        tx = 0;
-        ty = 0;
-        applyViewport();
+        fitToCanvas();
       });
 
       // ---------- Dev-only: copy layout JSON to clipboard ----------
