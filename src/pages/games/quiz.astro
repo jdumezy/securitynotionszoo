@@ -1,0 +1,825 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkMath from "remark-math";
+import remarkRehype from "remark-rehype";
+import rehypeMathjax from "rehype-mathjax";
+import rehypeStringify from "rehype-stringify";
+
+const notions = await getCollection("notions");
+const quizItems = await getCollection("quiz");
+
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkMath)
+  .use(remarkRehype)
+  .use(rehypeMathjax)
+  .use(rehypeStringify);
+
+const md = (input: string) => String(processor.processSync(input));
+
+// Transitive closure of the `implies` relation on the notion graph
+const byAcronym = Object.fromEntries(notions.map((n) => [n.data.acronym, n]));
+const closure: Record<string, string[]> = {};
+for (const n of notions) {
+  const seen = new Set<string>();
+  const stack = [...n.data.implies];
+  while (stack.length) {
+    const a = stack.pop()!;
+    if (seen.has(a)) continue;
+    seen.add(a);
+    const child = byAcronym[a];
+    if (child) stack.push(...child.data.implies);
+  }
+  closure[n.data.acronym] = Array.from(seen);
+}
+
+const customQuestions = quizItems.map((item) => ({
+  id: item.slug,
+  promptHTML: md(item.body),
+  choicesHTML: item.data.choices.map((c) => md(c)),
+  correct: item.data.correct,
+  explanationHTML: item.data.explanation ? md(item.data.explanation) : null,
+  relatedNotion: item.data.relatedNotion ?? null,
+  tags: item.data.tags ?? [],
+}));
+
+const notionsData = notions.map((n) => ({
+  slug: n.slug,
+  acronym: n.data.acronym,
+  title: n.data.title,
+  description: n.data.description,
+  tags: n.data.tags,
+  implies: n.data.implies,
+  implied_by: n.data.implied_by,
+  paper: n.data.introduced_in[0] ?? null,
+}));
+
+const quizData = {
+  notions: notionsData,
+  closure,
+  customQuestions,
+};
+
+// Escape `</` so the JSON can't break out of the <script> tag
+const quizJson = JSON.stringify(quizData).replace(/</g, "\\u003c");
+---
+
+<BaseLayout
+  title="Quiz | SecurityNotionsZoo"
+  description="Test your knowledge of cryptographic security notions with a multiple-choice quiz."
+>
+  <div class="mb-8">
+    <a
+      href="/games/"
+      class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-6 decoration-transparent transition-colors"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+      >
+      Back to games
+    </a>
+  </div>
+
+  <div class="max-w-2xl mx-auto w-full">
+    <!-- START SCREEN -->
+    <section id="screen-start" class="space-y-8">
+      <div>
+        <h1
+          class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-slate-100 mb-3 tracking-tight transition-colors"
+        >
+          Quiz
+        </h1>
+        <p
+          class="text-lg text-slate-600 dark:text-slate-400 transition-colors"
+        >
+          Multiple-choice questions on acronyms, implications, definitions,
+          and attack models and security notions in general.
+        </p>
+      </div>
+
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm transition-colors"
+      >
+        <fieldset>
+          <legend
+            class="text-base font-semibold text-slate-900 dark:text-slate-200 mb-4 transition-colors"
+          >
+            How many questions?
+          </legend>
+          <div class="grid grid-cols-3 gap-3" id="length-picker">
+            <button
+              type="button"
+              data-length="5"
+              class="length-btn py-4 px-4 rounded-xl text-lg font-semibold border-2 transition-colors"
+            >
+              5
+            </button>
+            <button
+              type="button"
+              data-length="10"
+              class="length-btn py-4 px-4 rounded-xl text-lg font-semibold border-2 transition-colors"
+              data-default="true"
+            >
+              10
+            </button>
+            <button
+              type="button"
+              data-length="20"
+              class="length-btn py-4 px-4 rounded-xl text-lg font-semibold border-2 transition-colors"
+            >
+              20
+            </button>
+          </div>
+        </fieldset>
+
+        <button
+          type="button"
+          id="start-btn"
+          class="w-full mt-6 py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        >
+          Start quiz
+        </button>
+
+        <p
+          id="best-scores"
+          class="mt-4 text-sm text-slate-500 dark:text-slate-400 text-center transition-colors hidden"
+        >
+        </p>
+      </div>
+
+      <div
+        class="text-sm text-slate-500 dark:text-slate-400 text-center transition-colors"
+      >
+        Pick an answer, get immediate feedback, move on. No time pressure.
+      </div>
+    </section>
+
+    <!-- PLAYING SCREEN -->
+    <section id="screen-playing" class="space-y-6" hidden>
+      <div>
+        <div
+          class="flex justify-between items-center mb-2 text-sm text-slate-500 dark:text-slate-400 transition-colors"
+        >
+          <span>
+            Question <span id="current-index">1</span> /
+            <span id="total-count">10</span>
+          </span>
+          <span>
+            Score: <span id="current-score">0</span>
+          </span>
+        </div>
+        <div
+          class="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden transition-colors"
+        >
+          <div
+            id="progress-bar-fill"
+            class="h-full bg-sky-600 dark:bg-accent transition-[width] duration-300"
+            style="width: 0%"
+          >
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm transition-colors"
+      >
+        <div
+          id="question-prompt"
+          class="prose prose-slate dark:prose-invert max-w-none text-lg text-slate-900 dark:text-slate-100 mb-6 transition-colors"
+        >
+        </div>
+
+        <div id="choices" class="space-y-3"></div>
+      </div>
+
+      <div
+        id="feedback"
+        class="rounded-2xl p-5 md:p-6 border-2 transition-colors"
+        hidden
+      >
+        <div class="flex items-start gap-3 mb-3">
+          <div
+            id="feedback-icon"
+            class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+          >
+          </div>
+          <div
+            id="feedback-title"
+            class="text-lg font-bold self-center transition-colors"
+          >
+          </div>
+        </div>
+        <div
+          id="feedback-explanation"
+          class="prose prose-slate dark:prose-invert max-w-none text-sm md:text-base transition-colors"
+        >
+        </div>
+        <a
+          id="related-link"
+          href="#"
+          class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 decoration-transparent transition-colors"
+          hidden
+        >
+          Learn more
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg
+          >
+        </a>
+      </div>
+
+      <button
+        type="button"
+        id="next-btn"
+        class="w-full py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        hidden
+      >
+        Next question
+      </button>
+    </section>
+
+    <!-- END SCREEN -->
+    <section id="screen-end" class="space-y-6" hidden>
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-10 border border-slate-200 dark:border-slate-700/50 shadow-sm text-center transition-colors"
+      >
+        <div
+          id="end-emoji"
+          class="text-6xl mb-4 select-none"
+          aria-hidden="true"
+        >
+        </div>
+        <h2
+          class="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-2 transition-colors"
+        >
+          <span id="final-score">0</span> / <span id="final-total">0</span>
+        </h2>
+        <p
+          id="end-message"
+          class="text-base text-slate-600 dark:text-slate-400 transition-colors"
+        >
+        </p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          id="restart-btn"
+          class="flex-1 py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        >
+          Play again
+        </button>
+        <a
+          href="/games/"
+          class="flex-1 py-4 px-6 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-lg font-semibold text-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors decoration-transparent"
+        >
+          Back to games
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <script type="application/json" id="quiz-data" is:inline set:html={quizJson} />
+
+  <script>
+    interface NotionData {
+      slug: string;
+      acronym: string;
+      title: string;
+      description: string;
+      tags: string[];
+      implies: string[];
+      implied_by: string[];
+      paper: { title?: string; authors?: string[]; year?: number | null; link?: string } | null;
+    }
+
+    interface CustomQuestionData {
+      id: string;
+      promptHTML: string;
+      choicesHTML: string[];
+      correct: number;
+      explanationHTML: string | null;
+      relatedNotion: string | null;
+      tags: string[];
+    }
+
+    interface QuizData {
+      notions: NotionData[];
+      closure: Record<string, string[]>;
+      customQuestions: CustomQuestionData[];
+    }
+
+    interface Question {
+      kind: "autogen" | "custom";
+      promptHTML: string;
+      choicesHTML: string[];
+      correct: number;
+      explanationHTML: string | null;
+      relatedNotion: string | null;
+      id?: string;
+    }
+
+    const initQuiz = () => {
+      const dataEl = document.getElementById("quiz-data");
+      if (!dataEl || !dataEl.textContent) return;
+      const data: QuizData = JSON.parse(dataEl.textContent);
+      const { notions, closure, customQuestions } = data;
+      const byAcronym: Record<string, NotionData> = Object.fromEntries(
+        notions.map((n) => [n.acronym, n]),
+      );
+
+      // ---------- Utilities ----------
+      const $ = <T extends HTMLElement = HTMLElement>(sel: string) =>
+        document.querySelector(sel) as T | null;
+
+      const shuffle = <T>(arr: T[]): T[] => {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+      const sample = <T>(arr: T[], n: number): T[] => shuffle(arr).slice(0, n);
+      const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+      const esc = (s: string) =>
+        s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+      // ---------- Autogenerated question builders ----------
+      const genAcronymToTitle = (): Question | null => {
+        if (notions.length < 4) return null;
+        const n = pick(notions);
+        const distractors = sample(
+          notions.filter((x) => x.acronym !== n.acronym),
+          3,
+        ).map((x) => x.title);
+        const choices = shuffle([n.title, ...distractors]);
+        return {
+          kind: "autogen",
+          promptHTML: `<p>What does <strong>${esc(n.acronym)}</strong> stand for?</p>`,
+          choicesHTML: choices.map((c) => `<p>${esc(c)}</p>`),
+          correct: choices.indexOf(n.title),
+          explanationHTML: `<p><strong>${esc(n.acronym)}</strong> stands for &ldquo;${esc(n.title)}&rdquo;. ${esc(n.description)}</p>`,
+          relatedNotion: n.slug,
+        };
+      };
+
+      const genTitleToAcronym = (): Question | null => {
+        if (notions.length < 4) return null;
+        const n = pick(notions);
+        const distractors = sample(
+          notions.filter((x) => x.acronym !== n.acronym),
+          3,
+        ).map((x) => x.acronym);
+        const choices = shuffle([n.acronym, ...distractors]);
+        return {
+          kind: "autogen",
+          promptHTML: `<p>Which acronym corresponds to &ldquo;<em>${esc(n.title)}</em>&rdquo;?</p>`,
+          choicesHTML: choices.map((c) => `<p>${esc(c)}</p>`),
+          correct: choices.indexOf(n.acronym),
+          explanationHTML: `<p>&ldquo;${esc(n.title)}&rdquo; is the full name of <strong>${esc(n.acronym)}</strong>. ${esc(n.description)}</p>`,
+          relatedNotion: n.slug,
+        };
+      };
+
+      const genStronger = (): Question | null => {
+        const pairs: [string, string][] = [];
+        for (const a of notions) {
+          for (const b of closure[a.acronym] || []) {
+            if (!(closure[b] || []).includes(a.acronym)) {
+              pairs.push([a.acronym, b]);
+            }
+          }
+        }
+        if (pairs.length === 0) return null;
+        const [stronger, weaker] = pick(pairs);
+        const choices = shuffle([stronger, weaker]);
+        return {
+          kind: "autogen",
+          promptHTML: `<p>Which notion is typically <strong>stronger</strong>?</p>`,
+          choicesHTML: choices.map((c) => `<p>${esc(c)}</p>`),
+          correct: choices.indexOf(stronger),
+          explanationHTML: `<p><strong>${esc(stronger)}</strong> implies <strong>${esc(weaker)}</strong> (directly or transitively), so ${esc(stronger)} is the stronger notion.</p>`,
+          relatedNotion: byAcronym[stronger]?.slug ?? null,
+        };
+      };
+
+      const genImpliesYesNo = (): Question | null => {
+        if (notions.length < 2) return null;
+        const a = pick(notions);
+        const others = notions.filter((n) => n.acronym !== a.acronym);
+        const b = pick(others);
+        const implies = (closure[a.acronym] || []).includes(b.acronym);
+        const choices = ["Yes", "No"];
+        return {
+          kind: "autogen",
+          promptHTML: `<p>Does <strong>${esc(a.acronym)}</strong> imply <strong>${esc(b.acronym)}</strong>?</p>`,
+          choicesHTML: choices.map((c) => `<p>${c}</p>`),
+          correct: implies ? 0 : 1,
+          explanationHTML: implies
+            ? `<p>Yes. ${esc(a.acronym)} implies ${esc(b.acronym)} (directly or transitively). Every scheme secure under ${esc(a.acronym)} is also secure under ${esc(b.acronym)}.</p>`
+            : `<p>No. ${esc(a.acronym)} does not imply ${esc(b.acronym)} in the taxonomy.</p>`,
+          relatedNotion: a.slug,
+        };
+      };
+
+      const genTagClassification = (): Question | null => {
+        const allTags = Array.from(new Set(notions.flatMap((n) => n.tags)));
+        if (allTags.length < 2) return null;
+        const tagged = notions.filter((n) => n.tags.length > 0);
+        if (tagged.length === 0) return null;
+        const n = pick(tagged);
+        const correctTag = pick(n.tags);
+        const distractorPool = allTags.filter((t) => !n.tags.includes(t));
+        if (distractorPool.length < 1) return null;
+        const distractors = sample(distractorPool, Math.min(3, distractorPool.length));
+        const choices = shuffle([correctTag, ...distractors]);
+        return {
+          kind: "autogen",
+          promptHTML: `<p>Which of these tags is associated with <strong>${esc(n.acronym)}</strong>?</p>`,
+          choicesHTML: choices.map((c) => `<p>${esc(c)}</p>`),
+          correct: choices.indexOf(correctTag),
+          explanationHTML: `<p><strong>${esc(n.acronym)}</strong> is tagged ${n.tags.map((t) => `&ldquo;${esc(t)}&rdquo;`).join(", ")} in the taxonomy.</p>`,
+          relatedNotion: n.slug,
+        };
+      };
+
+      const genPaperYear = (): Question | null => {
+        const withPaper = notions.filter(
+          (n) => n.paper && typeof n.paper.year === "number",
+        );
+        if (withPaper.length < 2) return null;
+        const n = pick(withPaper);
+        const year = n.paper!.year as number;
+        const offsets = shuffle([-1, 1, -3, 3, -5, 5, -7, 7]);
+        const nowYear = new Date().getFullYear();
+        const distractorYears: number[] = [];
+        for (const off of offsets) {
+          const y = year + off;
+          if (y > 1970 && y <= nowYear && !distractorYears.includes(y)) {
+            distractorYears.push(y);
+          }
+          if (distractorYears.length === 3) break;
+        }
+        if (distractorYears.length < 3) return null;
+        const choices = shuffle([year, ...distractorYears].map(String));
+        const authors = n.paper!.authors?.length
+          ? ` by ${n.paper!.authors!.join(", ")}`
+          : "";
+        return {
+          kind: "autogen",
+          promptHTML: `<p>In what year was <strong>${esc(n.acronym)}</strong> introduced?</p>`,
+          choicesHTML: choices.map((c) => `<p>${c}</p>`),
+          correct: choices.indexOf(String(year)),
+          explanationHTML: `<p>${esc(n.acronym)} was introduced in ${year}${esc(authors)}.</p>`,
+          relatedNotion: n.slug,
+        };
+      };
+
+      const autogenGenerators: Array<() => Question | null> = [
+        genAcronymToTitle,
+        genTitleToAcronym,
+        genStronger,
+        genImpliesYesNo,
+        genTagClassification,
+        genPaperYear,
+      ];
+
+      // ---------- Session builder ----------
+      const buildSession = (count: number): Question[] => {
+        const session: Question[] = [];
+        // Include custom questions, up to about half the session
+        const shuffledCustom = shuffle(customQuestions);
+        const maxCustom = Math.min(
+          shuffledCustom.length,
+          Math.max(1, Math.ceil(count / 2)),
+        );
+        for (let i = 0; i < maxCustom; i++) {
+          const c = shuffledCustom[i];
+          session.push({
+            kind: "custom",
+            id: c.id,
+            promptHTML: c.promptHTML,
+            choicesHTML: c.choicesHTML,
+            correct: c.correct,
+            explanationHTML: c.explanationHTML,
+            relatedNotion: c.relatedNotion,
+          });
+        }
+        // Fill the rest with autogen, avoiding duplicate prompts
+        const seenPrompts = new Set(session.map((q) => q.promptHTML));
+        let safety = 400;
+        while (session.length < count && safety-- > 0) {
+          const gen = pick(autogenGenerators);
+          const q = gen();
+          if (!q) continue;
+          if (seenPrompts.has(q.promptHTML)) continue;
+          seenPrompts.add(q.promptHTML);
+          session.push(q);
+        }
+        return shuffle(session);
+      };
+
+      // ---------- UI state ----------
+      let selectedLength = 10;
+      let state: {
+        session: Question[];
+        index: number;
+        correct: number;
+      } | null = null;
+
+      const showScreen = (id: "start" | "playing" | "end") => {
+        for (const s of ["start", "playing", "end"] as const) {
+          const el = document.getElementById(`screen-${s}`);
+          if (el) (el as HTMLElement).hidden = s !== id;
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+
+      const renderQuestion = () => {
+        if (!state) return;
+        const q = state.session[state.index];
+        const total = state.session.length;
+        const idxEl = $("#current-index");
+        const totalEl = $("#total-count");
+        const scoreEl = $("#current-score");
+        const barEl = $<HTMLElement>("#progress-bar-fill");
+        if (idxEl) idxEl.textContent = String(state.index + 1);
+        if (totalEl) totalEl.textContent = String(total);
+        if (scoreEl) scoreEl.textContent = String(state.correct);
+        if (barEl) barEl.style.width = `${(state.index / total) * 100}%`;
+
+        const promptEl = $("#question-prompt");
+        if (promptEl) promptEl.innerHTML = q.promptHTML;
+
+        const choicesEl = $("#choices");
+        if (choicesEl) {
+          choicesEl.innerHTML = "";
+          q.choicesHTML.forEach((html, i) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className =
+              "choice-btn w-full text-left p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40 text-slate-900 dark:text-slate-100 hover:border-sky-400 dark:hover:border-accent/60 transition-colors";
+            btn.innerHTML = `<div class="choice-content prose prose-slate dark:prose-invert max-w-none prose-p:my-0">${html}</div>`;
+            btn.dataset.index = String(i);
+            btn.addEventListener("click", () => answer(i));
+            choicesEl.appendChild(btn);
+          });
+        }
+
+        const feedback = $<HTMLElement>("#feedback");
+        if (feedback) feedback.hidden = true;
+        const nextBtn = $<HTMLButtonElement>("#next-btn");
+        if (nextBtn) nextBtn.hidden = true;
+      };
+
+      const answer = (pickedIndex: number) => {
+        if (!state) return;
+        const q = state.session[state.index];
+        const isCorrect = pickedIndex === q.correct;
+        if (isCorrect) state.correct++;
+
+        const scoreEl = $("#current-score");
+        if (scoreEl) scoreEl.textContent = String(state.correct);
+
+        const buttons = document.querySelectorAll<HTMLButtonElement>(
+          "#choices .choice-btn",
+        );
+        buttons.forEach((btn, i) => {
+          btn.disabled = true;
+          btn.classList.remove(
+            "hover:border-sky-400",
+            "dark:hover:border-accent/60",
+          );
+          if (i === q.correct) {
+            btn.classList.add(
+              "border-emerald-500",
+              "bg-emerald-50",
+              "dark:bg-emerald-500/10",
+              "dark:border-emerald-400",
+            );
+          } else if (i === pickedIndex) {
+            btn.classList.add(
+              "border-rose-500",
+              "bg-rose-50",
+              "dark:bg-rose-500/10",
+              "dark:border-rose-400",
+            );
+          } else {
+            btn.classList.add("opacity-60");
+          }
+        });
+
+        const feedback = $<HTMLElement>("#feedback");
+        const icon = $("#feedback-icon");
+        const title = $("#feedback-title");
+        const expl = $("#feedback-explanation");
+        const link = $<HTMLAnchorElement>("#related-link");
+
+        if (feedback) {
+          feedback.hidden = false;
+          feedback.className =
+            "rounded-2xl p-5 md:p-6 border-2 transition-colors " +
+            (isCorrect
+              ? "bg-emerald-50 dark:bg-emerald-500/5 border-emerald-300 dark:border-emerald-500/40"
+              : "bg-rose-50 dark:bg-rose-500/5 border-rose-300 dark:border-rose-500/40");
+        }
+        if (icon) {
+          icon.className =
+            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 " +
+            (isCorrect
+              ? "bg-emerald-500 text-white"
+              : "bg-rose-500 text-white");
+          icon.innerHTML = isCorrect
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>';
+        }
+        if (title) {
+          title.textContent = isCorrect ? "Correct" : "Not quite";
+          title.className =
+            "text-lg font-bold self-center transition-colors " +
+            (isCorrect
+              ? "text-emerald-700 dark:text-emerald-300"
+              : "text-rose-700 dark:text-rose-300");
+        }
+        if (expl) {
+          if (q.explanationHTML) {
+            expl.innerHTML = q.explanationHTML;
+            (expl as HTMLElement).hidden = false;
+          } else {
+            expl.innerHTML = "";
+            (expl as HTMLElement).hidden = true;
+          }
+        }
+        if (link) {
+          if (q.relatedNotion) {
+            link.href = `/notions/${q.relatedNotion}/`;
+            link.hidden = false;
+          } else {
+            link.hidden = true;
+          }
+        }
+
+        const nextBtn = $<HTMLButtonElement>("#next-btn");
+        if (nextBtn) {
+          nextBtn.hidden = false;
+          nextBtn.textContent =
+            state.index === state.session.length - 1
+              ? "See results"
+              : "Next question";
+          nextBtn.focus();
+        }
+      };
+
+      const nextQuestion = () => {
+        if (!state) return;
+        state.index++;
+        if (state.index >= state.session.length) {
+          endSession();
+        } else {
+          renderQuestion();
+        }
+      };
+
+      const endSession = () => {
+        if (!state) return;
+        const score = state.correct;
+        const total = state.session.length;
+        const scoreEl = $("#final-score");
+        const totalEl = $("#final-total");
+        const msg = $("#end-message");
+        const emoji = $("#end-emoji");
+
+        if (scoreEl) scoreEl.textContent = String(score);
+        if (totalEl) totalEl.textContent = String(total);
+
+        const ratio = total > 0 ? score / total : 0;
+        if (emoji) {
+          emoji.textContent =
+            ratio === 1
+              ? "\uD83C\uDFC6"
+              : ratio >= 0.8
+                ? "\uD83C\uDF89"
+                : ratio >= 0.5
+                  ? "\uD83D\uDC4D"
+                  : "\uD83D\uDCDA";
+        }
+
+        const bestKey = `quiz-best-${total}`;
+        let prevBest = 0;
+        try {
+          prevBest = parseInt(localStorage.getItem(bestKey) || "0", 10);
+        } catch {}
+        let message = "";
+        if (score > prevBest) {
+          try {
+            localStorage.setItem(bestKey, String(score));
+          } catch {}
+          message = prevBest > 0 ? `New best score! (was ${prevBest}/${total})` : "New best score!";
+        } else if (prevBest > 0) {
+          message = `Your best: ${prevBest}/${total}`;
+        }
+        if (msg) msg.textContent = message;
+
+        showScreen("end");
+      };
+
+      const startSession = (count: number) => {
+        state = { session: buildSession(count), index: 0, correct: 0 };
+        if (state.session.length === 0) return;
+        showScreen("playing");
+        renderQuestion();
+      };
+
+      // ---------- Length picker ----------
+      const lengthBtns = document.querySelectorAll<HTMLButtonElement>(".length-btn");
+      const activeClasses = [
+        "border-sky-600",
+        "dark:border-accent",
+        "bg-sky-50",
+        "dark:bg-accent/10",
+        "text-sky-700",
+        "dark:text-accent",
+      ];
+      const inactiveClasses = [
+        "border-slate-200",
+        "dark:border-slate-700",
+        "bg-white",
+        "dark:bg-slate-800/40",
+        "text-slate-700",
+        "dark:text-slate-300",
+      ];
+
+      const setLengthSelection = (len: number) => {
+        selectedLength = len;
+        lengthBtns.forEach((b) => {
+          const isActive = Number(b.dataset.length) === len;
+          b.classList.remove(
+            ...activeClasses,
+            ...inactiveClasses,
+          );
+          b.classList.add(...(isActive ? activeClasses : inactiveClasses));
+        });
+      };
+
+      lengthBtns.forEach((b) => {
+        b.addEventListener("click", () =>
+          setLengthSelection(Number(b.dataset.length)),
+        );
+      });
+      setLengthSelection(10);
+
+      // ---------- Best score display ----------
+      const bestEl = $("#best-scores");
+      const bestParts: string[] = [];
+      for (const len of [5, 10, 20]) {
+        try {
+          const v = parseInt(localStorage.getItem(`quiz-best-${len}`) || "0", 10);
+          if (v > 0) bestParts.push(`${v}/${len}`);
+        } catch {}
+      }
+      if (bestEl && bestParts.length > 0) {
+        bestEl.textContent = `Best scores: ${bestParts.join(" · ")}`;
+        bestEl.classList.remove("hidden");
+      }
+
+      // ---------- Wire buttons ----------
+      const startBtn = $<HTMLButtonElement>("#start-btn");
+      if (startBtn) startBtn.addEventListener("click", () => startSession(selectedLength));
+
+      const nextBtn = $<HTMLButtonElement>("#next-btn");
+      if (nextBtn) nextBtn.addEventListener("click", nextQuestion);
+
+      const restartBtn = $<HTMLButtonElement>("#restart-btn");
+      if (restartBtn) restartBtn.addEventListener("click", () => showScreen("start"));
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initQuiz);
+    } else {
+      initQuiz();
+    }
+  </script>
+</BaseLayout>

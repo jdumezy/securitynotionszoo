@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "The security parameter is too small"
+  - "Decryption of approximate ciphertexts leaks noise that depends on the exact sequence of queries, so adjacent hybrid games are not perfectly indistinguishable"
+  - "Approximate FHE has no single-challenge formulation"
+  - "Hybrid arguments apply only to symmetric encryption"
+correct: 1
+explanation: "In approximate FHE (like CKKS), decryption produces plaintexts carrying query-dependent noise. Adjacent hybrids $H_i$ and $H_{i+1}$ differ in one ciphertext, and this difference leaks a distinguishable noise profile. The hybrid games are no longer perfectly indistinguishable, and the triangle inequality no longer gives a useful bound. This is exactly why the multi-challenge (LOR) variants of CPAD and vCCAD are strictly stronger than the single-challenge (FTG) variants."
+relatedNotion: "cpad"
+tags: ["primer", "fhe", "proof-technique"]
+---
+
+Why does the standard **hybrid argument** fail for **IND-CPAD** in the approximate FHE setting?

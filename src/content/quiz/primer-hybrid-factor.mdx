@@ -1,0 +1,13 @@
+---
+type: "multiple-choice"
+choices:
+  - "No loss (a tight reduction)"
+  - "A constant factor"
+  - "A factor of $q$, where $q$ is the number of challenge queries"
+  - "An exponential factor in the security parameter $\\lambda$"
+correct: 2
+explanation: "A hybrid argument defines $q + 1$ games $H_0, \\ldots, H_q$, where $H_i$ encrypts 'right' messages for the first $i$ queries and 'left' messages for the rest. Each adjacent pair differs in exactly one ciphertext, and a triangle inequality over the $q$ hops yields $\\mathsf{Adv}^{\\text{multi}} \\leq q \\cdot \\mathsf{Adv}^{\\text{single}}$. If $q$ is polynomial and the single-challenge advantage is negligible, so is the multi-challenge advantage."
+tags: ["primer", "proof-technique"]
+---
+
+A standard **hybrid argument** reduces multi-challenge security to single-challenge security. What is the typical advantage degradation?

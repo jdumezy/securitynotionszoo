@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "Nothing: the decryption oracle is revoked once the challenge is issued"
+  - "Decrypt any ciphertext except the challenge $c^*$"
+  - "Query only a validity-check oracle (accept/reject)"
+  - "Decrypt the challenge $c^*$ itself"
+correct: 0
+explanation: "CCA1 is the 'lunchtime attack' model: the adversary gets unrestricted decryption oracle access in the pre-challenge phase, but the oracle is taken away once the challenge ciphertext is issued. Post-challenge decryption access is what distinguishes CCA2 from CCA1."
+relatedNotion: "cca1"
+tags: ["cca", "oracle-model"]
+---
+
+In the **CCA1** game, what can the adversary do with the decryption oracle **after** receiving the challenge ciphertext?

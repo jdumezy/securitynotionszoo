@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "Because bootstrapping destroys non-malleability"
+  - "Because FHE schemes are explicitly designed to allow ciphertext transformations, which is a form of malleability"
+  - "Because lattice-based schemes never achieve non-malleability"
+  - "Because FHE uses deterministic encryption"
+correct: 1
+explanation: "Non-malleability forbids an adversary from producing a ciphertext whose plaintext bears any meaningful relation to the challenge plaintext. FHE schemes are built precisely to enable such transformations (addition, multiplication, function evaluation). Any useful FHE scheme is therefore inherently malleable and cannot be NM-CPA secure, which is why IND (not NM) is the standard goal for FHE."
+relatedNotion: "cpa"
+tags: ["flavors", "fhe"]
+---
+
+Why can no useful FHE scheme achieve **NM-CPA** security?

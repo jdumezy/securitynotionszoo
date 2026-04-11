@@ -41,6 +41,8 @@ const {
   definedTerm,
   breadcrumbs,
 } = Astro.props;
+
+const isGamesPage = Astro.url.pathname.startsWith("/games");
 ---
 
 <!DOCTYPE html>
@@ -98,6 +100,11 @@ const {
           </a>
           <div class="flex items-center gap-3 sm:gap-4 shrink-0">
             <a
+              href="/games/"
+              class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+              >Games</a
+            >
+            <a
               href="/about/"
               class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
               >About</a
@@ -123,5 +130,67 @@ const {
         <p>&copy; {new Date().getFullYear()} SecurityNotionsZoo.</p>
       </footer>
     </div>
+
+    {
+      !isGamesPage && (
+        <a
+          href="/games/"
+          aria-label="Play security notion games"
+          title="Games"
+          class="games-fab fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 w-14 h-14 rounded-full bg-sky-600 dark:bg-accent text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 flex items-center justify-center transition-all duration-200 decoration-transparent"
+        >
+          <span
+            class="games-fab-pulse absolute inset-0 rounded-full bg-sky-600 dark:bg-accent"
+            aria-hidden="true"
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="relative"
+          >
+            <line x1="6" x2="10" y1="11" y2="11" />
+            <line x1="8" x2="8" y1="9" y2="13" />
+            <line x1="15" x2="15.01" y1="12" y2="12" />
+            <line x1="18" x2="18.01" y1="10" y2="10" />
+            <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" />
+          </svg>
+        </a>
+      )
+    }
+
+    <style>
+      .games-fab-pulse {
+        animation: games-fab-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        opacity: 0;
+      }
+
+      @keyframes games-fab-pulse {
+        0% {
+          transform: scale(1);
+          opacity: 0.55;
+        }
+        70% {
+          transform: scale(1.55);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1.55);
+          opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .games-fab-pulse {
+          animation: none;
+        }
+      }
+    </style>
   </body>
 </html>

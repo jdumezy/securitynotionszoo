@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "$|\\Pr[b' = b] - \\tfrac{1}{2}|$"
+  - "$\\Pr[b' = b]$"
+  - "$\\Pr[b' = b] - \\Pr[b' \\ne b]$"
+  - "$1 - \\Pr[b' = b]$"
+correct: 0
+explanation: "The IND-CPA advantage measures how much better than random guessing the adversary performs. Since a random guess gives $\\Pr[b' = b] = \\tfrac{1}{2}$, the advantage is the absolute deviation from $\\tfrac{1}{2}$."
+relatedNotion: "cpa"
+tags: ["definition", "cpa"]
+---
+
+In the IND-CPA game, the adversary outputs a guess $b'$ for the challenge bit $b$. Which expression defines the adversary's **advantage**?

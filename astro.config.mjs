@@ -9,12 +9,16 @@ import rehypeMathjax from 'rehype-mathjax';
 
 import { gitLastMod } from './src/lib/git-dates.mjs';
 
+const buildStart = new Date().toISOString();
+
 function lastmodForUrl(url) {
   const pathname = new URL(url).pathname;
   if (pathname === '/') return gitLastMod('src/pages/index.astro');
   if (pathname === '/about/') return gitLastMod('src/pages/about.astro');
   if (pathname === '/flavors/') return gitLastMod('src/content/flavors.mdx');
   if (pathname === '/primer/') return gitLastMod('src/content/primer.mdx');
+  if (pathname === '/games/') return gitLastMod('src/pages/games/index.astro');
+  if (pathname === '/games/quiz/') return gitLastMod('src/pages/games/quiz.astro');
   const notionMatch = pathname.match(/^\/notions\/([^/]+)\/?$/);
   if (notionMatch) return gitLastMod(`src/content/notions/${notionMatch[1]}.mdx`);
   return buildStart;

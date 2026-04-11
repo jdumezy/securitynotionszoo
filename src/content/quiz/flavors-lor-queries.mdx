@@ -1,0 +1,13 @@
+---
+type: "multiple-choice"
+choices:
+  - "Exactly once"
+  - "Polynomially many times, each with a different message pair $(m_{j,0}, m_{j,1})$"
+  - "Exactly as many times as the security parameter $\\lambda$"
+  - "Never: LOR has no challenge oracle"
+correct: 1
+explanation: "LOR is the multi-challenge formulation of indistinguishability. The challenger samples a bit $b$, and the adversary repeatedly queries an oracle $\\mathcal{O}_{\\text{LOR}}(\\cdot, \\cdot, b)$ with chosen pairs $(m_{j,0}, m_{j,1})$, each time receiving $\\mathsf{Enc}(m_{j,b})$. The single-challenge variant is Find-Then-Guess (FTG)."
+tags: ["flavors", "definition"]
+---
+
+In the **Left-or-Right (LOR)** formulation, how many times can the adversary query the challenge oracle?

@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "A two-message indistinguishability game with a SNARK-based extractor"
+  - "A 'rigged ciphertext' game with a single-plaintext challenge, where the adversary distinguishes the normal world from one in which homomorphic transformations behave specially"
+  - "A key-recovery game"
+  - "A multi-challenge left-or-right game"
+correct: 1
+explanation: "HCCA (Prabhakaran and Rosulek, 2008) uses a non-standard 'rigged ciphertext' formulation: the challenger either issues a normal encryption of a single plaintext, or a rigged ciphertext that responds specially when subjected to homomorphic transformations. The adversary must decide which world it is in. HCCA generalizes CCA2, gCCA and RCCA, but is limited to univariate (single-input) homomorphisms."
+relatedNotion: "hcca"
+tags: ["cca", "fhe"]
+---
+
+Which structural feature best describes the **HCCA** game?

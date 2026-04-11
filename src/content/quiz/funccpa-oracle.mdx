@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "A decryption oracle restricted to legitimately derived ciphertexts"
+  - "A re-encryption oracle that decrypts a ciphertext, applies a function $f$, and re-encrypts the result"
+  - "A relinearization key oracle"
+  - "A signing oracle under the public key"
+correct: 1
+explanation: "funcCPA (Akavia, Gentry, Halevi and Vald, 2022) equips the adversary with a 'functional' oracle that takes a ciphertext $c$ and a function $f$, internally computes $c' = \\mathsf{Enc}(f(\\mathsf{Dec}(c)))$, and returns $c'$. This models interactive bootstrapping delegation, where a client refreshes ciphertexts for a server. funcCPA is strictly stronger than plain CPA."
+relatedNotion: "funccpa"
+tags: ["cpa", "fhe", "oracle-model"]
+---
+
+Which oracle characterizes the **funcCPA** security notion?

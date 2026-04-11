@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "The adversary controls the encryption randomness for non-challenge ciphertexts"
+  - "The adversary gets a full decryption oracle"
+  - "The adversary chooses the key generation randomness"
+  - "The adversary obtains the secret key after the challenge"
+correct: 0
+explanation: "sCPAD (Bernard, Joye, Smart and Walter, 2025) strengthens CPAD by allowing the adversary to pick the encryption randomness of their own ciphertext queries. This naturally models public-key adversaries, which always implicitly control encryption randomness, and is strictly stronger than CPAD in both the symmetric and public-key settings."
+relatedNotion: "scpad"
+tags: ["cpa", "fhe"]
+---
+
+What additional adversarial capability defines **sCPAD** over plain **CPAD**?

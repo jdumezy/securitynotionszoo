@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "It replaces vCCA's syntactic (derivation-based) filtering with semantic (plaintext-based) filtering"
+  - "It removes the SNARK extractor entirely"
+  - "It restricts the game to symmetric-key settings"
+  - "It removes the post-challenge oracle"
+correct: 0
+explanation: "vCCAD (Brzuska et al., 2025) strengthens vCCA specifically for approximate FHE. Instead of asking whether a query was syntactically derived from the challenge, the oracle filters semantically: it refuses queries where the claimed function $f$ would produce different outputs on $m_0$ and $m_1$. This combines vCCA's protection against malleability with CPAD's protection against noise leakage."
+relatedNotion: "vccad"
+tags: ["cca", "fhe"]
+---
+
+How does **vCCAD** strengthen **vCCA** for approximate FHE schemes?
