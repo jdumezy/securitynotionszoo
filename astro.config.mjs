@@ -1,5 +1,4 @@
 // @ts-check
-import { execSync } from 'node:child_process';
 import { defineConfig } from 'astro/config';
 
 import tailwindcss from '@tailwindcss/vite';
@@ -8,18 +7,7 @@ import sitemap from '@astrojs/sitemap';
 import remarkMath from 'remark-math';
 import rehypeMathjax from 'rehype-mathjax';
 
-const buildStart = new Date().toISOString();
-
-function gitLastMod(filePath) {
-  try {
-    const iso = execSync(`git log -1 --format=%cI -- "${filePath}"`, {
-      encoding: 'utf8',
-    }).trim();
-    return iso || buildStart;
-  } catch {
-    return buildStart;
-  }
-}
+import { gitLastMod } from './src/lib/git-dates.mjs';
 
 function lastmodForUrl(url) {
   const pathname = new URL(url).pathname;

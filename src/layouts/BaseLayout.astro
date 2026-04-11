@@ -4,6 +4,16 @@ import ThemeToggle from "../components/ThemeToggle.astro";
 import SEO from "../components/SEO.astro";
 import Logo from "../components/Logo.astro";
 
+interface BreadcrumbItem {
+  name: string;
+  url?: string;
+}
+
+interface DefinedTermInput {
+  termCode: string;
+  alternateName?: string[];
+}
+
 interface Props {
   title: string;
   description?: string;
@@ -11,6 +21,11 @@ interface Props {
   type?: string;
   keywords?: string[];
   noindex?: boolean;
+  author?: string;
+  datePublished?: string;
+  dateModified?: string;
+  definedTerm?: DefinedTermInput;
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 const {
@@ -20,13 +35,30 @@ const {
   type,
   keywords,
   noindex = false,
+  author,
+  datePublished,
+  dateModified,
+  definedTerm,
+  breadcrumbs,
 } = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <SEO title={title} description={description} image={image} type={type} keywords={keywords} noindex={noindex} />
+    <SEO
+      title={title}
+      description={description}
+      image={image}
+      type={type}
+      keywords={keywords}
+      noindex={noindex}
+      author={author}
+      datePublished={datePublished}
+      dateModified={dateModified}
+      definedTerm={definedTerm}
+      breadcrumbs={breadcrumbs}
+    />
     <script is:inline>
       const theme = (() => {
         if (

@@ -7,7 +7,11 @@ const allNotions = await getCollection("notions");
 const allTags = Array.from(new Set(allNotions.flatMap((notion) => notion.data.tags))).sort();
 ---
 
-<BaseLayout title="SecurityNotionsZoo | Cryptography Notions Taxonomy">
+<BaseLayout
+  title="SecurityNotionsZoo — IND-CPA, IND-CCA, CPAD, FHE Security Notions"
+  description="A taxonomy of cryptographic security notions (IND-CPA, IND-CCA1, IND-CCA2, IND-CPAᴰ, vCCA, funcCPA, gCCA, and more), focusing on Fully Homomorphic Encryption."
+  keywords={["IND-CPA", "IND-CCA", "IND-CCA1", "IND-CCA2", "CPAD", "vCCA", "funcCPA", "gCCA", "FHE", "Fully Homomorphic Encryption", "cryptography", "security notion", "taxonomy"]}
+>
   <div class="mb-12">
     <h1
       class="text-4xl font-extrabold mb-4 text-slate-900 dark:text-slate-100 transition-colors"
