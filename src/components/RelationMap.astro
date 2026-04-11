@@ -12,7 +12,7 @@ let mermaidGraph = 'graph TD;\n';
 notions.forEach(notion => {
   const acronym = notion.data.acronym;
   mermaidGraph += `  ${acronym}["${acronym}"]\n`;
-  mermaidGraph += `  click ${acronym} "/notions/${notion.slug}" "Go to ${acronym}"\n`;
+  mermaidGraph += `  click ${acronym} "/notions/${notion.slug}/" "Go to ${acronym}"\n`;
 
   // A --> B means A implies B (A is a strictly stronger notion)
   if (notion.data.implies && notion.data.implies.length > 0) {

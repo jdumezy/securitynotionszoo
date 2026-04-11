@@ -21,7 +21,7 @@ const { implies, impliedBy } = Astro.props;
       )}
       {implies.map((n) => (
         <a
-          href={`/notions/${n.slug}`}
+          href={`/notions/${n.slug}/`}
           class="group inline-flex items-center gap-2 text-sm font-medium text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 decoration-transparent transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="m15 18-6-6 6-6"/></svg>
@@ -36,7 +36,7 @@ const { implies, impliedBy } = Astro.props;
       )}
       {impliedBy.map((n) => (
         <a
-          href={`/notions/${n.slug}`}
+          href={`/notions/${n.slug}/`}
           class="group inline-flex items-center gap-2 text-sm font-medium text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 decoration-transparent transition-colors sm:flex-row-reverse"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="m9 18 6-6-6-6"/></svg>

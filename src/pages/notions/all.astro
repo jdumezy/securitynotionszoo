@@ -13,7 +13,7 @@ const renderedNotions = await Promise.all(
 );
 ---
 
-<BaseLayout title="All Security Notions | SecurityNotionsZoo" description="A complete list of all cryptographic security notions.">
+<BaseLayout title="All Security Notions | SecurityNotionsZoo" description="A complete list of all cryptographic security notions." noindex={true}>
   <div class="mb-10">
     <a href="/" class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-8 decoration-transparent transition-colors">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -41,7 +41,7 @@ const renderedNotions = await Promise.all(
                 ))}
               </div>
               <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2 transition-colors">
-                <a href={`/notions/${notion.slug}`} class="hover:text-sky-600 dark:hover:text-accent transition-colors decoration-transparent text-slate-900 dark:text-slate-100">
+                <a href={`/notions/${notion.slug}/`} class="hover:text-sky-600 dark:hover:text-accent transition-colors decoration-transparent text-slate-900 dark:text-slate-100">
                   {notion.data.acronym}
                 </a>
               </h2>
