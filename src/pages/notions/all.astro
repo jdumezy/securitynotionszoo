@@ -27,9 +27,32 @@ const renderedNotions = await Promise.all(
     </p>
   </div>
 
-  <div class="space-y-12 mb-16">
+  <div class="mb-8">
+    <div class="relative">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input
+        type="search"
+        id="notion-search"
+        placeholder="Search by acronym, title, tag, or description…"
+        aria-label="Search notions"
+        class="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800/20 border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500 dark:focus:border-accent focus:ring-2 focus:ring-sky-500/20 dark:focus:ring-accent/20 transition-colors"
+      />
+    </div>
+    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400 transition-colors">
+      Showing <span id="search-count">{renderedNotions.length}</span> of {renderedNotions.length} notions
+    </p>
+    <p id="search-empty" class="mt-6 text-center text-slate-500 dark:text-slate-400 hidden transition-colors">
+      No notions match your search.
+    </p>
+  </div>
+
+  <div class="space-y-12 mb-16" id="notions-list">
     {renderedNotions.map(({ notion, Content }) => (
-      <article id={notion.slug} class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm expandable-container scroll-mt-24 transition-colors">
+      <article
+        id={notion.slug}
+        class="notion-article bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm expandable-container scroll-mt-24 transition-colors"
+        data-search={`${notion.data.acronym} ${notion.data.title} ${notion.data.description} ${notion.data.tags.join(' ')}`.toLowerCase()}
+      >
         <header class="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700/50 transition-colors">
           <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
             <div>
@@ -122,4 +145,39 @@ const renderedNotions = await Promise.all(
 
   // setTimeout inside ensures scrollHeight is measured after layout
   document.addEventListener('DOMContentLoaded', initializeExpanders);
+
+  const initializeSearch = () => {
+    const input = document.getElementById('notion-search') as HTMLInputElement | null;
+    const articles = document.querySelectorAll<HTMLElement>('.notion-article');
+    const countEl = document.getElementById('search-count');
+    const emptyEl = document.getElementById('search-empty');
+    const total = articles.length;
+
+    if (!input) return;
+
+    const applyFilter = () => {
+      const query = input.value.trim().toLowerCase();
+      let visible = 0;
+
+      articles.forEach((article) => {
+        const haystack = article.getAttribute('data-search') || '';
+        const match = query === '' || haystack.includes(query);
+        article.classList.toggle('hidden', !match);
+        if (match) visible++;
+      });
+
+      if (countEl) countEl.textContent = visible.toString();
+      if (emptyEl) emptyEl.classList.toggle('hidden', visible !== 0);
+    };
+
+    input.addEventListener('input', applyFilter);
+
+    // If the user arrived with a hash, don't let filtering hide it
+    if (window.location.hash) {
+      const target = document.getElementById(window.location.hash.slice(1));
+      if (target) target.scrollIntoView();
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', initializeSearch);
 </script>
