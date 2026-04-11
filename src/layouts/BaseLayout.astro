@@ -10,6 +10,7 @@ interface Props {
   image?: string;
   type?: string;
   keywords?: string[];
+  noindex?: boolean;
 }
 
 const {
@@ -18,13 +19,14 @@ const {
   image,
   type,
   keywords,
+  noindex = false,
 } = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <SEO title={title} description={description} image={image} type={type} keywords={keywords} />
+    <SEO title={title} description={description} image={image} type={type} keywords={keywords} noindex={noindex} />
     <script is:inline>
       const theme = (() => {
         if (
@@ -64,7 +66,7 @@ const {
           </a>
           <div class="flex items-center gap-3 sm:gap-4 shrink-0">
             <a
-              href="/about"
+              href="/about/"
               class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
               >About</a
             >

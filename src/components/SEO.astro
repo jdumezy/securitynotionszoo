@@ -6,6 +6,7 @@ interface Props {
   type?: string;
   image?: string;
   keywords?: string[];
+  noindex?: boolean;
 }
 
 const {
@@ -14,6 +15,7 @@ const {
   type = 'website',
   image = '/icon.png',
   keywords,
+  noindex = false,
 } = Astro.props;
 
 // Determine canonical URL from Astro.url or props
@@ -56,6 +58,9 @@ const jsonLd = type === 'article' ? {
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
+
+<!-- Robots -->
+{noindex && <meta name="robots" content="noindex, follow" />}
 
 <!-- Primary Meta Tags -->
 <title>{title}</title>
