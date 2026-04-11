@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "When the adversary provides a valid SNARK proof"
+  - "When the declared function $f$ satisfies $f(m_0) = f(m_1)$ on both challenge plaintexts"
+  - "When the ciphertext was freshly encrypted by the challenger"
+  - "Only during the pre-challenge phase"
+correct: 1
+explanation: "SA (Walter, 2024) models client-authoritative FHE+SNARG where the client knows the inputs and the function being computed. The decryption oracle accepts a queried ciphertext together with a claimed function $f$ if and only if $f(m_0) = f(m_1)$. Since the declared output is identical for both challenge plaintexts, it reveals nothing about the hidden bit. This makes SA an orthogonal axis rather than a point on the CPA-to-CCA ladder."
+relatedNotion: "sa"
+tags: ["fhe", "oracle-model"]
+---
+
+In the **SA (Semi-Active)** game, when does the decryption oracle accept an externally-computed ciphertext together with its claimed function $f$?

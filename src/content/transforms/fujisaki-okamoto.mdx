@@ -1,0 +1,19 @@
+---
+name: "Fujisaki-Okamoto transform"
+from: ["CPA"]
+to: "CCA2"
+assumption: "Random oracle model"
+category: "classical"
+paper:
+  title: "Secure integration of asymmetric and symmetric encryption schemes"
+  authors: ["Eiichiro Fujisaki", "Tatsuaki Okamoto"]
+  year: 1999
+  link: "https://link.springer.com/chapter/10.1007/3-540-48405-1_34"
+tags: ["pke", "rom", "kem"]
+---
+
+The Fujisaki-Okamoto (FO) transform upgrades any IND-CPA public-key encryption scheme (and even any one-way PKE, in some variants) into an IND-CCA2 scheme, provably secure in the **random oracle model**.
+
+The idea: derandomize encryption by using the hash of the message and some randomness as the encryption randomness, then bind the message to a key-encapsulation wrapper checked via a re-encryption test at decryption time. Any ciphertext that would decrypt "differently" from how an honest sender would have produced it is rejected as invalid.
+
+The FO transform and its modern variants are the backbone of most post-quantum KEMs, including the NIST-standardized lattice-based schemes Kyber and NTRU.

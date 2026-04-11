@@ -1,0 +1,13 @@
+---
+type: "multiple-choice"
+choices:
+  - "The original security game as defined by the scheme"
+  - "A trivial game in which the adversary's advantage is clearly $0$"
+  - "A game with no adversary at all"
+  - "A game in which the secret key is explicitly leaked"
+correct: 1
+explanation: "A game-hopping proof walks from $G_0$ (the real security game) through small conceptual steps to $G_n$, which is engineered to be trivial: typically the adversary's winning probability is exactly $1/2$ for an indistinguishability game, so the advantage is $0$. Each hop is justified either by perfect indistinguishability or by a reduction to a hard problem."
+tags: ["primer", "proof-technique"]
+---
+
+In a **game-hopping** proof that walks through games $G_0, G_1, \ldots, G_n$, what is the final game $G_n$ typically designed to be?

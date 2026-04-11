@@ -1,0 +1,13 @@
+---
+type: "multiple-choice"
+choices:
+  - "Because bootstrapping is too slow without it"
+  - "Because practical evaluation keys (bootstrapping, relinearization, Galois) contain encryptions of secret-key material under the same public key"
+  - "Because lattice-based schemes cannot be proved secure in the standard model"
+  - "Because the adversary always recovers the key in FHE"
+correct: 1
+explanation: "Mainstream FHE schemes (BFV, BGV, CKKS, TFHE) must publish evaluation keys that encrypt the secret key (or $sk \\otimes sk$, or Galois automorphisms of $sk$) under its own public key. Standard IND-CPA says nothing about the security of such key-dependent encryptions, so circular (key-dependent message) security is an extra assumption required for practical FHE. No unconditional proof reduces it to standard lattice assumptions like LWE; it is taken as a heuristic."
+tags: ["primer", "fhe"]
+---
+
+Why is **circular security** (also called key-dependent message security) considered a mandatory assumption for practical FHE schemes?

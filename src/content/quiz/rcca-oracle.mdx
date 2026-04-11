@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "Only the exact challenge ciphertext $c^*$"
+  - "Any ciphertext whose plaintext equals $m_0$ or $m_1$, regardless of its structure"
+  - "All ciphertexts after the challenge phase"
+  - "Any ciphertext failing a format check"
+correct: 1
+explanation: "RCCA (Canetti, Krawczyk and Nielsen, 2003) tolerates harmless re-randomizations of the challenge: its post-challenge oracle refuses any ciphertext that decrypts to either $m_0$ or $m_1$. This blocks trivial wins but still permits evaluating to other plaintexts, which is precisely why RCCA is incompatible with FHE (the adversary can homomorphically evaluate to a plaintext outside $\\{m_0, m_1\\}$)."
+relatedNotion: "rcca"
+tags: ["cca", "fhe"]
+---
+
+Which ciphertexts does the **RCCA** post-challenge decryption oracle refuse to decrypt?

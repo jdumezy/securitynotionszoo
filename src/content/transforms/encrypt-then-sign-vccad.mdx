@@ -1,0 +1,17 @@
+---
+name: "Encrypt-then-Sign"
+from: ["CPAD"]
+to: "vCCAD"
+assumption: "CPAD-secure FHE + SUF-CMA signature + straightline-extractable SNARK"
+category: "private-key"
+paper:
+  title: "Relations among new CCA security notions for approximate FHE"
+  authors: ["Chris Brzuska", "Sébastien Canard", "Caroline Fontaine", "Duong Hieu Phan", "David Pointcheval", "Marc Renard", "Renaud Sirdey"]
+  year: 2025
+  link: "https://eprint.iacr.org/2024/812"
+tags: ["signatures", "verifiable-fhe"]
+---
+
+Brzuska et al. show that the private-key Encrypt-then-Sign blueprint can be lifted from the original **CPA-to-vCCA** setting of Manulis and Nguyen to a **CPAD-to-vCCAD** construction. Every fresh ciphertext is signed with a SUF-CMA signature, and every evaluated ciphertext carries a SNARK proof that it was obtained by honest homomorphic evaluation from signed inputs. Fresh ciphertexts are accepted only if their signature verifies; evaluated ciphertexts are accepted only if the SNARK proof verifies and its extracted inputs are themselves signed.
+
+Strong unforgeability blocks forged fresh ciphertexts, while straightline extractability of the evaluation SNARK is enough to recover the input list used by the vCCAD filter. The reduction does not need simulator access to the SNARK: the adversary only sees evaluation proofs that it generated itself.

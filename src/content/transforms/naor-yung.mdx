@@ -1,0 +1,19 @@
+---
+name: "Naor-Yung double encryption"
+from: ["CPA"]
+to: "CCA1"
+assumption: "Simulation-sound NIZK"
+category: "classical"
+paper:
+  title: "Public-key cryptosystems provably secure against chosen ciphertext attacks"
+  authors: ["Moni Naor", "Moti Yung"]
+  year: 1990
+  link: "https://dl.acm.org/doi/10.1145/100216.100273"
+tags: ["pke", "nizk"]
+---
+
+The Naor-Yung paradigm lifts an IND-CPA public-key encryption scheme to IND-CCA1 by publishing **two independent encryptions** of the same message under two separate public keys, together with a non-interactive zero-knowledge proof of plaintext equality.
+
+The proof forces the adversary to choose ciphertexts whose plaintexts it already knows, which lets the simulator answer any pre-challenge decryption query by decrypting either copy. A simulation-sound NIZK is required: the adversary must not be able to produce new valid proofs for false statements even after seeing simulated proofs.
+
+Variants extend the paradigm to full CCA2 (e.g., Sahai 1999) and underpin later constructions such as the vCCA framework for FHE.

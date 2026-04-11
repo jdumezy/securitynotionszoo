@@ -20,6 +20,41 @@ const notionsCollection = defineCollection({
   }),
 });
 
+const quizCollection = defineCollection({
+  type: 'content',
+  schema: z.object({
+    type: z.literal('multiple-choice').default('multiple-choice'),
+    choices: z.array(z.string()).min(2).max(6),
+    correct: z.number().int().nonnegative(),
+    explanation: z.string().optional(),
+    relatedNotion: z.string().optional(),
+    tags: z.array(z.string()).optional().default([]),
+  }).refine((d) => d.correct < d.choices.length, {
+    message: '`correct` must be a valid index into `choices`',
+    path: ['correct'],
+  }),
+});
+
+const transformsCollection = defineCollection({
+  type: 'content',
+  schema: z.object({
+    name: z.string(),
+    from: z.array(z.string()).min(1),
+    to: z.string(),
+    assumption: z.string().optional(),
+    category: z.enum(['classical', 'fhe', 'private-key', 'non-falsifiable']).default('classical'),
+    paper: z.object({
+      title: z.string().optional(),
+      authors: z.array(z.string()).optional().default([]),
+      year: z.number().nullable().optional(),
+      link: z.union([z.string().url(), z.literal('')]).optional(),
+    }).optional(),
+    tags: z.array(z.string()).optional().default([]),
+  }),
+});
+
 export const collections = {
   notions: notionsCollection,
+  quiz: quizCollection,
+  transforms: transformsCollection,
 };

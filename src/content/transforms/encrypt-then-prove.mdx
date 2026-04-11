@@ -1,0 +1,17 @@
+---
+name: "Encrypt-then-Prove"
+from: ["sCPAD"]
+to: "vCCAD"
+assumption: "Simulation-extractable well-formedness SNARK + straightline-extractable evaluation SNARK"
+category: "fhe"
+paper:
+  title: "Relations among new CCA security notions for approximate FHE"
+  authors: ["Chris Brzuska", "Sébastien Canard", "Caroline Fontaine", "Duong Hieu Phan", "David Pointcheval", "Marc Renard", "Renaud Sirdey"]
+  year: 2025
+  link: "https://eprint.iacr.org/2024/812"
+tags: ["snark", "approximate-fhe"]
+---
+
+The public-key publicly verifiable route to vCCAD proposed by Brzuska, Canard, Fontaine, Phan, Pointcheval, Renard and Sirdey (CIC 2025). Start from an **sCPAD-secure FHE scheme** (strong CPAD: the adversary controls encryption randomness, noise leakage is handled). Attach each fresh ciphertext to a **simulation-extractable zk-SNARK** for the well-formedness language (proving it is an honest encryption of some message under some randomness), and attach each evaluated ciphertext to a **straightline-extractable zk-SNARK** for correct homomorphic derivation from previously verified inputs.
+
+Together the two SNARKs provide the vCCAD witness extractor used to implement the semantic-filter decryption oracle, and because both are publicly verifiable the construction works in the public-key setting with anyone as verifier. Replacing CPA with sCPAD at the base layer is what closes the approximate-FHE noise channel that vanilla vCCA would otherwise leave open, and gives the first compact publicly verifiable construction that reaches vCCAD in the general (approximate) regime.

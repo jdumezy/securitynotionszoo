@@ -1,0 +1,17 @@
+---
+name: "Ciphertext re-randomization"
+from: ["CPA"]
+to: "sCPAD"
+assumption: "Re-randomizable fresh ciphertexts (ACER correctness)"
+category: "fhe"
+paper:
+  title: "Drifting Towards Better Error Probabilities in Fully Homomorphic Encryption Schemes"
+  authors: ["Olivier Bernard", "Marc Joye", "Nigel P. Smart", "Michael Walter"]
+  year: 2025
+  link: "https://eprint.iacr.org/2024/1718"
+tags: ["randomness", "acer"]
+---
+
+If a statistically correct FHE scheme has **re-randomizable ciphertexts** and fresh ciphertexts are perfectly correct, then re-randomizing each input ciphertext before evaluation yields **ACER correctness** (adversarial correctness with evaluation re-randomization). This removes the ability of a sCPAD adversary to exploit their control over encryption randomness to force correlated failures.
+
+The transform is essentially a hygiene rule: "before you evaluate, re-randomize". It converts the guarantees you had as a plain CPA-secure scheme with malleable fresh ciphertexts into the stronger sCPAD regime without changing the underlying scheme.

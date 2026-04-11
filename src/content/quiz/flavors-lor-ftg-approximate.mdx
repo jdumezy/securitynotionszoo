@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "Standard CPA and CCA for exact encryption"
+  - "IND-CPAD and IND-vCCAD in the approximate FHE regime"
+  - "Semantic security for public-key encryption"
+  - "Key recovery"
+correct: 1
+explanation: "For standard CPA and CCA, Bellare, Desai, Jokipii and Rogaway (1997) showed that LOR and FTG are polynomially equivalent via a hybrid argument. But Brzuska et al. (CIC 2025) proved that this equivalence breaks down for approximate FHE's CPAD and vCCAD notions: the hybrid games are not perfectly indistinguishable because decryption of approximate ciphertexts leaks noise depending on the queries, so the multi-challenge LOR variants are strictly stronger than the single-challenge FTG variants."
+relatedNotion: "cpad"
+tags: ["flavors", "fhe"]
+---
+
+For which security notions is the **LOR (multi-challenge)** variant **strictly stronger** than the **FTG (single-challenge)** variant?

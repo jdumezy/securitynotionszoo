@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "The adversary may submit any ciphertext except the challenge ciphertext $c^*$"
+  - "The adversary loses decryption oracle access once the challenge is issued"
+  - "The adversary has no decryption oracle at all"
+  - "The adversary may decrypt $c^*$ but not related ciphertexts"
+correct: 0
+explanation: "CCA2 (adaptive chosen-ciphertext attack) grants the adversary access to a decryption oracle both before and after seeing the challenge ciphertext. The only restriction is that the oracle refuses to decrypt $c^*$ itself, otherwise the game would be trivial."
+relatedNotion: "cca2"
+tags: ["cca", "oracle-model"]
+---
+
+In the CCA2 security game, what access does the adversary have to the decryption oracle **after** receiving the challenge ciphertext $c^*$?

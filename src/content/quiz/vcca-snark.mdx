@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "A decryption oracle"
+  - "A SNARK-based witness extractor"
+  - "A validity check from the encryption scheme"
+  - "A message-authentication code"
+correct: 1
+explanation: "vCCA (Manulis and Nguyen, 2024) uses a SNARK-based extractor to decide whether a post-challenge query was derived from the challenge ciphertext. If derivation is detected, the oracle refuses the query; otherwise the ciphertext is decrypted normally. This places vCCA strictly between CCA1 and CCA2, and makes it useful for FHE without collapsing to trivial insecurity."
+relatedNotion: "vcca"
+tags: ["cca", "fhe"]
+---
+
+What mechanism does **vCCA** use to decide whether a post-challenge query ciphertext is derived from the challenge?

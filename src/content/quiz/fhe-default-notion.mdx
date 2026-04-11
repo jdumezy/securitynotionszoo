@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "IND-CPA"
+  - "IND-CCA1"
+  - "IND-CCA2"
+  - "KR (key recovery)"
+correct: 0
+explanation: "Most lattice-based FHE constructions (BGV, BFV, CKKS, TFHE) are proven secure under IND-CPA. Since homomorphic evaluation inherently modifies ciphertexts, stronger active-security notions like CCA2 are incompatible with unrestricted homomorphic operations."
+relatedNotion: "cpa"
+tags: ["fhe", "cpa"]
+---
+
+Which security notion is the **default baseline** for most modern Fully Homomorphic Encryption schemes?

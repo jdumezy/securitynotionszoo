@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "A single bit indicating whether the ciphertext is valid"
+  - "The full decrypted plaintext"
+  - "The plaintext modulo a public group element"
+  - "A fresh encryption of the same plaintext"
+correct: 0
+explanation: "CCVA1 (Chosen Ciphertext Verification Attack 1) restricts the pre-challenge oracle so it only reveals whether a ciphertext is valid. No plaintext content is ever leaked. This makes CCVA1 strictly weaker than CCA1, where the oracle returns the actual plaintext."
+relatedNotion: "ccva1"
+tags: ["cca", "oracle-model"]
+---
+
+In the **CCVA1** game, what does the pre-challenge oracle return when the adversary submits a ciphertext?

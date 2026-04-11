@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "Because approximate decryption returns values that differ slightly from the exact plaintext, and those tiny differences leak information about the LWE noise and ultimately the secret key"
+  - "Because CPAD grants the adversary an unrestricted decryption oracle that CPA lacks"
+  - "Because the adversary in CPAD learns the secret key after the challenge"
+  - "Because CPAD forbids the adversary from using the encryption oracle"
+correct: 0
+explanation: "The CPAD decryption oracle only accepts *legitimate* ciphertexts, i.e. ciphertexts derived from prior encryption and evaluation queries on adversary-chosen plaintexts. For a correct FHE scheme, $\\mathsf{Dec}(c)$ equals the plaintext the adversary already knows, so the oracle is useless and CPAD collapses to CPA. For approximate FHE (CKKS), $\\mathsf{Dec}(c)$ differs slightly from the exact plaintext, and this difference encodes the LWE noise. Li and Micciancio (2021) showed this is enough to recover the secret key, proving CPAD is strictly stronger than CPA in the approximate regime."
+relatedNotion: "cpad"
+tags: ["cpad", "fhe"]
+---
+
+In the CPAD game, the decryption oracle returns $\mathsf{Dec}(c)$ for ciphertexts derived from prior encryption and evaluation queries. Why does this make **CPAD strictly stronger than CPA** for approximate FHE schemes like CKKS?

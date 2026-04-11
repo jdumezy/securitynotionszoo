@@ -1,0 +1,17 @@
+---
+name: "Encrypt-then-MAC"
+from: ["CPAD"]
+to: "vCCAD"
+assumption: "CPAD-secure FHE + SUF-CMA MAC + straightline-extractable SNARK"
+category: "private-key"
+paper:
+  title: "Relations among new CCA security notions for approximate FHE"
+  authors: ["Chris Brzuska", "Sébastien Canard", "Caroline Fontaine", "Duong Hieu Phan", "David Pointcheval", "Marc Renard", "Renaud Sirdey"]
+  year: 2025
+  link: "https://eprint.iacr.org/2024/812"
+tags: ["mac", "verifiable-fhe"]
+---
+
+Brzuska et al. note that the lighter private-key **Encrypt-then-MAC** variant extends to the approximate setting in the same way as Encrypt-then-Sign: start from a **CPAD-secure** FHE scheme, authenticate every fresh ciphertext with a MAC, and attach a SNARK for correct homomorphic evaluation. Because the evaluation proof need not certify the MACs itself, the evaluated ciphertext also carries its input ciphertexts so decryption can verify their tags directly.
+
+This yields a **vCCAD** construction with the same tradeoff as the original vCCA blueprint: cheaper symmetric authentication, but no compactness and no input privacy. The security upgrade relies on CPAD at the base layer and on straightline extraction for the evaluation SNARK.

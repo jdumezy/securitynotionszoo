@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "CCA2 rejects only the exact challenge ciphertext $c^*$, so trivial rewrites of $c^*$ (which carry the same plaintext) are not filtered"
+  - "CCA2 is too weak against passive adversaries"
+  - "CCA2 does not apply to deterministic encryption"
+  - "CCA2 requires unlimited encryption oracle queries"
+correct: 0
+explanation: "Under CCA2, the post-challenge oracle refuses only $c^*$ byte-for-byte. If the encoding is malleable (e.g., appending a no-op), a slight rewrite $c^* \\Vert 0$ is technically not $c^*$ but decrypts to the same plaintext, giving a trivial break. gCCA (An, Dodis and Rabin, 2002) fixes this by refusing any ciphertext equivalent to $c^*$ under an efficient decryption-respecting relation."
+relatedNotion: "gcca"
+tags: ["cca", "definition"]
+---
+
+What definitional issue with **CCA2** does **gCCA** fix?

@@ -1,0 +1,17 @@
+---
+name: "Naor-Yung for vCCA"
+from: ["CPA"]
+to: "vCCA"
+assumption: "CPA-secure FHE + simulation-sound NIZK + black-box weak SE SNARK"
+category: "fhe"
+paper:
+  title: "Fully Homomorphic Encryption beyond IND-CCA1 Security: Integrity through Verifiability"
+  authors: ["Mark Manulis", "Jérôme Nguyen"]
+  year: 2024
+  link: "https://eprint.iacr.org/2024/202"
+tags: ["naor-yung", "public-verifier", "snark"]
+---
+
+For the public-key, publicly verifiable case, Manulis and Nguyen use the **Naor-Yung double-encryption** paradigm as the fresh-ciphertext validity layer. A plaintext is encrypted twice under independent FHE public keys, together with a simulation-sound NIZK proving that the two ciphertexts encrypt the same message; evaluated ciphertexts then carry a SNARK proving correct homomorphic derivation from well-formed inputs.
+
+This gives a compact **vCCA** blueprint in the correct regime. The NIZK certifies fresh ciphertexts without revealing a secret verification key, while the SNARK witness extractor provides the input list used by the vCCA decryption filter. Brzuska et al. later point out that this route does not extend to general approximate FHE because it relies on perfect correctness.

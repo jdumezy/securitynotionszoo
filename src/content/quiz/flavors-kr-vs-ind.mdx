@@ -1,0 +1,13 @@
+---
+type: "multiple-choice"
+choices:
+  - "KR implies IND"
+  - "IND implies KR, but KR does not imply IND"
+  - "They are always equivalent"
+  - "KR is only defined for symmetric schemes"
+correct: 1
+explanation: "A scheme can satisfy KR (no efficient secret-key recovery) while still leaking partial information about plaintexts, so KR is strictly weaker than IND. Conversely, IND-CPA implies KR: an IND-CPA adversary can simulate a key-recovery adversary and check whether the recovered key decrypts the challenge correctly, yielding a non-negligible distinguishing advantage."
+tags: ["flavors", "definition"]
+---
+
+Which statement correctly compares **Key Recovery (KR)** and **Indistinguishability (IND)**?

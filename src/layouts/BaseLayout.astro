@@ -3,6 +3,7 @@ import "../styles/global.css";
 import ThemeToggle from "../components/ThemeToggle.astro";
 import SEO from "../components/SEO.astro";
 import Logo from "../components/Logo.astro";
+import SearchModal from "../components/SearchModal.astro";
 
 interface BreadcrumbItem {
   name: string;
@@ -41,6 +42,20 @@ const {
   definedTerm,
   breadcrumbs,
 } = Astro.props;
+
+const pathname = Astro.url.pathname;
+const isIndexPage = pathname === "/";
+const isMapPage = pathname === "/map/" || pathname === "/map";
+// Pulsating entry-point FABs only show on the two "hub" pages (index and
+// map). On every other page the BackToTop button owns the bottom-right.
+const showGamesFab = isIndexPage || isMapPage;
+// Amber map FAB appears on the index as a discovery affordance.
+const showMapFab = isIndexPage;
+// Green "back to taxonomy" button appears on the map as an exit affordance.
+const showHomeFab = isMapPage;
+// Stacked layout: games sits at the bottom, the secondary FAB above it.
+const gamesFabBottom = "bottom-5 sm:bottom-6";
+const secondaryFabBottom = "bottom-[5.75rem] sm:bottom-[6.5rem]";
 ---
 
 <!DOCTYPE html>
@@ -88,29 +103,159 @@ const {
       <header
         class="mb-12 border-b border-slate-200 dark:border-slate-800 pb-6"
       >
-        <nav class="flex justify-between items-center">
+        <nav class="flex justify-between items-center gap-3">
           <a
             href="/"
-            class="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors min-w-0"
+            aria-label="SecurityNotionsZoo home"
+            class="flex items-center gap-2 sm:gap-3 text-2xl font-bold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-600 dark:hover:text-accent decoration-transparent transition-colors min-w-0"
           >
-            <Logo class="w-7 h-7 sm:w-8 sm:h-8 text-current shrink-0" />
+            <Logo class="w-8 h-8 text-current shrink-0" />
             <span class="truncate">SecurityNotionsZoo</span>
           </a>
-          <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+          <div class="flex items-center gap-2 lg:gap-4 shrink-0">
+            <button
+              type="button"
+              id="search-open-btn"
+              aria-label="Search (Cmd+K)"
+              title="Search"
+              class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0"
+                ><circle cx="11" cy="11" r="8"></circle><path
+                  d="m21 21-4.3-4.3"></path></svg
+              >
+              <span class="hidden sm:inline">Search</span>
+              <kbd
+                class="hidden md:inline-flex items-center px-1.5 py-0.5 ml-1 text-[10px] font-sans font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded"
+              >
+                <span class="mr-0.5">⌘</span>K
+              </kbd>
+            </button>
+            <!-- Desktop inline nav (lg+) -->
+            <div class="hidden lg:flex items-center gap-4 shrink-0">
+              <a
+                href="/map/"
+                class="text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+                >Map</a
+              >
+              <a
+                href="/primer/"
+                class="text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+                >Primer</a
+              >
+              <a
+                href="/flavors/"
+                class="text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+                >Flavors</a
+              >
+              <a
+                href="/games/"
+                class="text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+                >Games</a
+              >
+              <a
+                href="/about/"
+                class="text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+                >About</a
+              >
+              <a
+                href="https://github.com/jdumezy/securitynotionszoo"
+                target="_blank"
+                class="text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+                >GitHub</a
+              >
+            </div>
+            <ThemeToggle />
+            <!-- Mobile hamburger (<lg) -->
+            <button
+              type="button"
+              id="nav-hamburger"
+              aria-label="Open menu"
+              aria-expanded="false"
+              aria-controls="nav-mobile-panel"
+              class="lg:hidden flex items-center justify-center w-9 h-9 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><line x1="4" x2="20" y1="6" y2="6"></line><line
+                  x1="4"
+                  x2="20"
+                  y1="12"
+                  y2="12"></line><line x1="4" x2="20" y1="18" y2="18"
+                ></line></svg
+              >
+            </button>
+          </div>
+        </nav>
+
+        <!-- Mobile panel -->
+        <div
+          id="nav-mobile-panel"
+          class="lg:hidden mt-4 border-t border-slate-200 dark:border-slate-800 pt-4 hidden"
+        >
+          <div class="flex flex-col gap-2">
+            <a
+              href="/map/"
+              class="px-3 py-2 rounded-md text-base text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 decoration-transparent font-medium transition-colors"
+              >Map</a
+            >
+            <a
+              href="/primer/"
+              class="px-3 py-2 rounded-md text-base text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 decoration-transparent font-medium transition-colors"
+              >Primer</a
+            >
+            <a
+              href="/flavors/"
+              class="px-3 py-2 rounded-md text-base text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 decoration-transparent font-medium transition-colors"
+              >Flavors</a
+            >
+            <a
+              href="/games/"
+              class="px-3 py-2 rounded-md text-base text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 decoration-transparent font-medium transition-colors"
+              >Games</a
+            >
             <a
               href="/about/"
-              class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+              class="px-3 py-2 rounded-md text-base text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 decoration-transparent font-medium transition-colors"
               >About</a
             >
             <a
               href="https://github.com/jdumezy/securitynotionszoo"
               target="_blank"
-              class="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 decoration-transparent font-medium transition-colors"
+              class="px-3 py-2 rounded-md text-base text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 decoration-transparent font-medium transition-colors"
               >GitHub</a
             >
-            <ThemeToggle />
           </div>
-        </nav>
+        </div>
+
+        <script>
+          const hamburger = document.getElementById("nav-hamburger");
+          const panel = document.getElementById("nav-mobile-panel");
+          if (hamburger && panel) {
+            hamburger.addEventListener("click", () => {
+              const open = panel.classList.toggle("hidden") === false;
+              hamburger.setAttribute("aria-expanded", String(open));
+            });
+          }
+        </script>
       </header>
 
       <main class="flex-grow">
@@ -123,5 +268,140 @@ const {
         <p>&copy; {new Date().getFullYear()} SecurityNotionsZoo.</p>
       </footer>
     </div>
+
+    <SearchModal />
+
+    {
+      showGamesFab && (
+        <a
+          href="/games/"
+          aria-label="Play security notion games"
+          title="Games"
+          class={`games-fab fixed ${gamesFabBottom} right-5 sm:right-6 z-40 w-14 h-14 rounded-full bg-sky-600 dark:bg-accent text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 flex items-center justify-center transition-all duration-200 decoration-transparent`}
+        >
+          <span
+            class="games-fab-pulse absolute inset-0 rounded-full bg-sky-600 dark:bg-accent"
+            aria-hidden="true"
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="relative"
+          >
+            <line x1="6" x2="10" y1="11" y2="11" />
+            <line x1="8" x2="8" y1="9" y2="13" />
+            <line x1="15" x2="15.01" y1="12" y2="12" />
+            <line x1="18" x2="18.01" y1="10" y2="10" />
+            <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" />
+          </svg>
+        </a>
+      )
+    }
+
+    {
+      showMapFab && (
+        <a
+          href="/map/"
+          aria-label="Open the constructions map"
+          title="Constructions map"
+          class={`map-fab fixed ${secondaryFabBottom} right-5 sm:right-6 z-40 w-14 h-14 rounded-full bg-amber-500 dark:bg-amber-400 text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 flex items-center justify-center transition-all duration-200 decoration-transparent`}
+        >
+          <span
+            class="map-fab-pulse absolute inset-0 rounded-full bg-amber-500 dark:bg-amber-400"
+            aria-hidden="true"
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="relative"
+          >
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+            <line x1="9" x2="9" y1="3" y2="18" />
+            <line x1="15" x2="15" y1="6" y2="21" />
+          </svg>
+        </a>
+      )
+    }
+
+    {
+      showHomeFab && (
+        <a
+          href="/"
+          aria-label="Back to the taxonomy"
+          title="Back to taxonomy"
+          class={`home-fab fixed ${secondaryFabBottom} right-5 sm:right-6 z-40 w-14 h-14 rounded-full bg-emerald-500 dark:bg-emerald-400 text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 flex items-center justify-center transition-all duration-200 decoration-transparent`}
+        >
+          <span
+            class="home-fab-pulse absolute inset-0 rounded-full bg-emerald-500 dark:bg-emerald-400"
+            aria-hidden="true"
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="relative"
+          >
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+        </a>
+      )
+    }
+
+    <style>
+      .games-fab-pulse {
+        animation: games-fab-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        opacity: 0;
+      }
+      .map-fab-pulse,
+      .home-fab-pulse {
+        animation: games-fab-pulse 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        animation-delay: 0.9s;
+        opacity: 0;
+      }
+
+      @keyframes games-fab-pulse {
+        0% {
+          transform: scale(1);
+          opacity: 0.55;
+        }
+        70% {
+          transform: scale(1.55);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1.55);
+          opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .games-fab-pulse,
+        .map-fab-pulse,
+        .home-fab-pulse {
+          animation: none;
+        }
+      }
+    </style>
   </body>
 </html>

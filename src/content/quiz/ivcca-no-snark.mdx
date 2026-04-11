@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "The adversary must explicitly supply the input ciphertexts used to produce the queried ciphertext"
+  - "A zero-knowledge proof system verifies the query"
+  - "A trusted third party certifies each query"
+  - "The oracle refuses all queries after the challenge"
+correct: 0
+explanation: "IV-CCA (Yang, Yu and Susilo, 2025) avoids SNARK-based extractors by requiring the adversary to present the input ciphertexts alongside the queried ciphertext, effectively witnessing that the query is a legitimate homomorphic evaluation. This makes IV-CCA achievable from LWE alone, at the cost of giving up compactness."
+relatedNotion: "ivcca"
+tags: ["cca", "fhe"]
+---
+
+How does **IV-CCA** validate a queried ciphertext as a legitimate homomorphic evaluation without relying on SNARKs?

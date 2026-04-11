@@ -1,0 +1,17 @@
+---
+name: "Noise flooding"
+from: ["CPA"]
+to: "CPAD"
+assumption: "Approximate FHE with floodable noise budget"
+category: "fhe"
+paper:
+  title: "Securing approximate homomorphic encryption using differential privacy"
+  authors: ["Baiyu Li", "Daniele Micciancio", "Mark Schultz", "Jessica Sorrell"]
+  year: 2022
+  link: "https://eprint.iacr.org/2022/816"
+tags: ["ckks", "approximate-fhe"]
+---
+
+Noise flooding makes an IND-CPA-secure approximate FHE scheme (like CKKS) additionally IND-CPAD-secure by **adding fresh Gaussian noise to the decrypted value** at decryption time. The flooding noise is chosen large enough to statistically mask the LWE error that would otherwise leak through the decrypted output and betray the secret key.
+
+This turns decryption into a probabilistic algorithm whose distribution is (almost) independent of the exact LWE error, closing the CPAD leak demonstrated by Li and Micciancio (2021). The approach costs some precision in the returned plaintext but is the first provable countermeasure for approximate FHE in the CPAD setting.

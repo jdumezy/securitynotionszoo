@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "CCVA2 grants validity-check access in both the pre-challenge and post-challenge phases, whereas CCVA1 only in the pre-challenge phase"
+  - "CCVA2 returns partial plaintext, whereas CCVA1 returns only a bit"
+  - "CCVA2 replaces the verification oracle with a full decryption oracle"
+  - "CCVA2 has no oracle while CCVA1 has one"
+correct: 0
+explanation: "CCVA1 permits validity queries only before the challenge. CCVA2 keeps the validity oracle accessible adaptively in both phases. Note that CCVA2 is strictly stronger than CCVA1 but is incomparable to CCA1: a pre-challenge decryption oracle and a both-phase validity oracle are not substitutes for each other."
+relatedNotion: "ccva2"
+tags: ["cca", "oracle-model"]
+---
+
+How does the **CCVA2** game differ from **CCVA1**?

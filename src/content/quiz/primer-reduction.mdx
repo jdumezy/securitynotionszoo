@@ -1,0 +1,13 @@
+---
+type: "multiple-choice"
+choices:
+  - "It proves that breaking $\\Pi$ would allow solving $A$"
+  - "It proves that solving $A$ would allow breaking $\\Pi$"
+  - "It provides an efficient algorithm for $A$"
+  - "It rewrites $\\Pi$ in a simpler equivalent form"
+correct: 0
+explanation: "A security reduction builds an algorithm $\\mathcal{B}$ that takes an $A$-instance as input, simulates the security game for $\\Pi$ toward a hypothetical $\\Pi$-breaker $\\mathcal{A}$, and uses $\\mathcal{A}$'s output to solve $A$. The contrapositive is the useful direction: if $A$ is hard, then no efficient adversary can break $\\Pi$. Reductions go *from* the scheme to the hard problem, not the other way."
+tags: ["primer", "definition"]
+---
+
+What does a security **reduction** from a hard problem $A$ to a scheme $\Pi$ actually prove?

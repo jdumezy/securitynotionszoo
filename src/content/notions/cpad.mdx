@@ -40,7 +40,7 @@ The scheme is CPAD-secure if the advantage $\mathsf{Adv}^{\mathsf{CPAD}}_{\Pi, \
 
 The key subtlety is that the decryption oracle returns $\mathsf{Dec}(S[l].c)$ rather than $S[l].m_0$.
 For correct FHE these coincide, making the oracle useless and CPAD equivalent to CPA.
-For approximate FHE, $\mathsf{Dec}(S[l].c) \neq S[l].m_0$ with overwhelming probability - the oracle leaks information the adversary cannot compute on its own.
+For approximate FHE, $\mathsf{Dec}(S[l].c)$ can differ from the exact target value with non-negligible probability, so the oracle may leak information the adversary cannot compute on its own.
 
 ## Attacks & Relevance
 

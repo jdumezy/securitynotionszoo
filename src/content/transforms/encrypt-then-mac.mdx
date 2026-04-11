@@ -1,0 +1,17 @@
+---
+name: "Encrypt-then-MAC"
+from: ["CPA"]
+to: "vCCA"
+assumption: "CPA-secure FHE + SUF-CMA MAC + black-box weak SE SNARK"
+category: "private-key"
+paper:
+  title: "Fully Homomorphic Encryption beyond IND-CCA1 Security: Integrity through Verifiability"
+  authors: ["Mark Manulis", "Jérôme Nguyen"]
+  year: 2024
+  link: "https://eprint.iacr.org/2024/202"
+tags: ["mac", "verifiable-fhe"]
+---
+
+A lighter private-key variant of Encrypt-then-Sign that trades compactness and input privacy for cheaper symmetric primitives. In the Manulis-Nguyen framework, a **CPA-secure** FHE scheme is wrapped with a MAC on every fresh ciphertext, while evaluated ciphertexts carry a SNARK for the simpler evaluation-only language $L_2$ and explicitly include their input ciphertexts so that decryption can verify their MAC tags.
+
+Because MACs are purely symmetric and the input ciphertexts must be available to the decryption algorithm, this variant is no longer compact and does not preserve input privacy. It is restricted to the private-key setting, where the MAC key is not exposed to the adversary. Strong unforgeability prevents an adversary from forging valid tags on mauled ciphertexts, and the SNARK extractor provides the input list used by the vCCA filter on evaluated ciphertexts.

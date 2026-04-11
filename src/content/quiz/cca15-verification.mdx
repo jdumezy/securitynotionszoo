@@ -1,0 +1,14 @@
+---
+type: "multiple-choice"
+choices:
+  - "Full decryption access in both phases"
+  - "Pre-challenge decryption access plus a post-challenge accept/reject verification oracle"
+  - "A relinearization key oracle"
+  - "No oracle at all, just the public key"
+correct: 1
+explanation: "CCA1.5 extends CCA1 by granting post-challenge access to a *verification* oracle that reveals only whether a ciphertext is valid, never the underlying plaintext. This models reaction attacks such as Bleichenbacher's RSA-PKCS#1 padding-oracle attack, where an attacker learns only accept/reject but still recovers information."
+relatedNotion: "cca15"
+tags: ["cca", "oracle-model"]
+---
+
+Which oracle capabilities characterize the **CCA1.5** game?

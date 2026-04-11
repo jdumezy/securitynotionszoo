@@ -1,0 +1,17 @@
+---
+name: "CCA2-Companion ciphertext"
+from: ["CPA"]
+to: "vCCA"
+assumption: "CPA-secure FHE + CCA2-secure companion PKE + black-box weak SE SNARK"
+category: "fhe"
+paper:
+  title: "Fully Homomorphic Encryption beyond IND-CCA1 Security: Integrity through Verifiability"
+  authors: ["Mark Manulis", "Jérôme Nguyen"]
+  year: 2024
+  link: "https://eprint.iacr.org/2024/202"
+tags: ["designated-verifier", "companion", "snark"]
+---
+
+Manulis and Nguyen's public-key designated-verifier route to **vCCA** pairs each fresh FHE ciphertext with a **CCA2-encrypted copy of the plaintext together with the FHE encryption randomness** under a separate, non-homomorphic public-key scheme. Evaluated ciphertexts additionally carry a SNARK proving correct homomorphic derivation from previously verified inputs.
+
+The companion ciphertext lets the decryptor recover $(m, r)$, re-run honest encryption, and check that the fresh FHE ciphertext is well formed. For evaluated ciphertexts, the SNARK witness extractor supplies the input list used by the vCCA filter. The construction is not compact and does not preserve input privacy, because verifying fresh inputs requires the companion decryption key and access to the input ciphertexts.

@@ -1,0 +1,200 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const quizItems = await getCollection("quiz");
+const customQuestionCount = quizItems.length;
+---
+
+<BaseLayout
+  title="Games | SecurityNotionsZoo"
+  description="Test your knowledge of cryptographic security notions with interactive games."
+>
+  <div class="mb-10">
+    <a
+      href="/"
+      class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-8 decoration-transparent transition-colors"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+      >
+      Back to taxonomy
+    </a>
+
+    <h1
+      class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-slate-100 mb-3 tracking-tight transition-colors"
+    >
+      Games
+    </h1>
+    <p
+      class="text-xl md:text-2xl text-slate-600 dark:text-slate-400 font-medium max-w-3xl leading-snug transition-colors"
+    >
+      Test your knowledge of cryptographic security notions
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+    <a
+      href="/games/quiz/"
+      class="block group no-underline decoration-transparent"
+    >
+      <article
+        class="h-full bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 hover:border-slate-400 dark:hover:border-slate-500 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:shadow-lg hover:-translate-y-1"
+      >
+        <div class="flex items-start justify-between mb-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-sky-100 dark:bg-accent/10 flex items-center justify-center text-sky-600 dark:text-accent transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="12" cy="12" r="10"></circle><path
+                d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path
+                d="M12 17h.01"></path></svg
+            >
+          </div>
+          <span
+            class="px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200 dark:border-emerald-500/20 transition-colors"
+          >
+            Available
+          </span>
+        </div>
+        <h2
+          class="text-2xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-accent mb-2 transition-colors"
+        >
+          Quiz
+        </h2>
+        <p
+          class="text-sm text-slate-600 dark:text-slate-300 mb-4 transition-colors"
+        >
+          Multiple-choice questions on acronyms, implications, definitions, and more.
+        </p>
+        <div
+          class="text-sm font-medium text-sky-600 dark:text-accent group-hover:underline transition-colors"
+        >
+          Start playing &rarr;
+        </div>
+      </article>
+    </a>
+
+    <a
+      href="/games/reorder/"
+      class="block group no-underline decoration-transparent"
+    >
+      <article
+        class="h-full bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 hover:border-slate-400 dark:hover:border-slate-500 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:shadow-lg hover:-translate-y-1"
+      >
+        <div class="flex items-start justify-between mb-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-sky-100 dark:bg-accent/10 flex items-center justify-center text-sky-600 dark:text-accent transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"
+              ></circle><circle cx="12" cy="18" r="3"></circle><path
+                d="M6 9v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9"></path><path
+                d="M12 12v3"></path></svg
+            >
+          </div>
+          <span
+            class="px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200 dark:border-emerald-500/20 transition-colors"
+          >
+            Available
+          </span>
+        </div>
+        <h2
+          class="text-2xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-accent mb-2 transition-colors"
+        >
+          Recreate the graph
+        </h2>
+        <p
+          class="text-sm text-slate-600 dark:text-slate-300 mb-4 transition-colors"
+        >
+          Draw every implication arrow between security notions from scratch.
+          Three difficulty levels, from the classic CPA/CCA ladder to the full
+          FHE taxonomy.
+        </p>
+        <div
+          class="text-sm font-medium text-sky-600 dark:text-accent group-hover:underline transition-colors"
+        >
+          Start playing &rarr;
+        </div>
+      </article>
+    </a>
+
+    <a
+      href="/games/designer/"
+      class="block group no-underline decoration-transparent"
+    >
+      <article
+        class="h-full bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 hover:border-slate-400 dark:hover:border-slate-500 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:shadow-lg hover:-translate-y-1"
+      >
+        <div class="flex items-start justify-between mb-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-sky-100 dark:bg-accent/10 flex items-center justify-center text-sky-600 dark:text-accent transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path
+                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+              ></path></svg
+            >
+          </div>
+          <span
+            class="px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200 dark:border-emerald-500/20 transition-colors"
+          >
+            Available
+          </span>
+        </div>
+        <h2
+          class="text-2xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-accent mb-2 transition-colors"
+        >
+          Build the adversary
+        </h2>
+        <p
+          class="text-sm text-slate-600 dark:text-slate-300 mb-4 transition-colors"
+        >
+          For each notion, pick the oracles and capabilities that define its
+          adversary's game. Three slots per round: pre-challenge oracle,
+          post-challenge oracle, and encryption randomness.
+        </p>
+        <div
+          class="text-sm font-medium text-sky-600 dark:text-accent group-hover:underline transition-colors"
+        >
+          Start playing &rarr;
+        </div>
+      </article>
+    </a>
+  </div>
+</BaseLayout>

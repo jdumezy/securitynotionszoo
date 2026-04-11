@@ -1,0 +1,17 @@
+---
+name: "Naor-Yung for FHE from LWE"
+from: ["CPA"]
+to: "IV-CCA"
+assumption: "LWE + perfectly correct FHE"
+category: "fhe"
+paper:
+  title: "Fully Homomorphic Encryption with Chosen-Ciphertext Security from LWE"
+  authors: ["Rupeng Yang", "Zuoxia Yu", "Willy Susilo"]
+  year: 2025
+  link: "https://link.springer.com/chapter/10.1007/978-3-032-01881-6_12"
+tags: ["lwe", "naor-yung", "public-verifier"]
+---
+
+The first fully working adaptation of the Naor-Yung double-encryption paradigm to fully homomorphic encryption, due to Yang, Yu, and Susilo at CRYPTO 2025. Each fresh ciphertext is a pair of LWE-based FHE encryptions of the same plaintext under two independent public keys, together with a specialised succinct argument that the two ciphertexts encrypt the same message. Homomorphic evaluation is performed in parallel on both copies, and the correctness witness (the tuple of input ciphertexts consumed by the evaluation) is attached so that the decryption oracle can run the scheme's `Verify` algorithm to decide whether the ciphertext comes from a legitimate derivation.
+
+The construction reaches **IV-CCA** security (strictly between CCA1 and vCCA): the post-challenge decryption oracle accepts any ciphertext whose declared input list does not contain the challenge. The Yang-Yu-Susilo argument replaces the general-purpose zk-SNARKs used in the vCCA blueprints of Manulis and Nguyen with a tailored argument specific to the Naor-Yung relation, which lets the security proof go through in the standard model under the LWE assumption alone, without non-falsifiable assumptions such as Knowledge-of-Exponent or Linear-Only Homomorphism. The underlying FHE must be **perfectly correct**, which the authors obtain by using truncated discrete Gaussians with exact $L_\infty$ bounds; this is why the construction targets IV-CCA and the general approximate regime is out of scope.
