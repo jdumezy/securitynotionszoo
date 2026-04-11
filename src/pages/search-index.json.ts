@@ -154,6 +154,17 @@ export const GET: APIRoute = async () => {
   });
   docs.push({
     type: "page",
+    id: "page:games-designer",
+    url: "/games/designer/",
+    title: "Build the adversary",
+    subtitle: "Game",
+    snippet:
+      "For each security notion, pick the oracles and capabilities that define its adversary's game.",
+    body: "designer adversary oracles capabilities game pre-challenge post-challenge randomness",
+    tags: ["game", "designer", "adversary"],
+  });
+  docs.push({
+    type: "page",
     id: "page:notions-all",
     url: "/notions/all/",
     title: "All security notions",

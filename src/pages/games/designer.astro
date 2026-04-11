@@ -1,0 +1,1023 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const notions = await getCollection("notions");
+const titleByAcronym: Record<string, string> = Object.fromEntries(
+  notions.map((n) => [n.data.acronym, n.data.title]),
+);
+const slugByAcronym: Record<string, string> = Object.fromEntries(
+  notions.map((n) => [n.data.acronym, n.slug]),
+);
+
+type SlotKey = "pre" | "post" | "randomness";
+
+interface SlotOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
+const slots: Record<SlotKey, { label: string; options: SlotOption[] }> = {
+  pre: {
+    label: "Pre-challenge oracle",
+    options: [
+      {
+        id: "none",
+        label: "None",
+        description:
+          "No decryption-like oracle at all. The adversary only sees the public key and the encryption oracle.",
+      },
+      {
+        id: "dec",
+        label: "Full decryption",
+        description:
+          "The adversary may submit any ciphertext and receive its plaintext.",
+      },
+      {
+        id: "validity",
+        label: "Validity check",
+        description:
+          "The oracle only reveals whether a submitted ciphertext is valid, never the plaintext.",
+      },
+      {
+        id: "legit",
+        label: "Legitimate ciphertexts only",
+        description:
+          "The oracle accepts only ciphertexts derived from prior encryption or homomorphic evaluation queries (CPAD-style).",
+      },
+      {
+        id: "func",
+        label: "Functional re-encryption",
+        description:
+          "The oracle takes a ciphertext and a function f, internally decrypts, applies f, and returns a fresh encryption of the result (funcCPA-style).",
+      },
+    ],
+  },
+  post: {
+    label: "Post-challenge oracle",
+    options: [
+      {
+        id: "none",
+        label: "None",
+        description:
+          "Oracle access is revoked the moment the challenge ciphertext is issued.",
+      },
+      {
+        id: "full",
+        label: "Full decryption (except c*)",
+        description:
+          "The full decryption oracle stays open adaptively, only refusing the exact challenge ciphertext (CCA2-style).",
+      },
+      {
+        id: "rcca",
+        label: "Decryption, plaintext filter",
+        description:
+          "Refuses any ciphertext that decrypts to either challenge plaintext m0 or m1, tolerating harmless re-randomizations (RCCA-style).",
+      },
+      {
+        id: "gcca",
+        label: "Decryption, equivalence filter",
+        description:
+          "Refuses ciphertexts equivalent to c* under an efficient decryption-respecting relation (gCCA-style).",
+      },
+      {
+        id: "vcca",
+        label: "Decryption, SNARK derivation filter",
+        description:
+          "A SNARK-based extractor rejects ciphertexts that are derivations of c*, but decrypts everything else (vCCA-style).",
+      },
+      {
+        id: "vccad",
+        label: "Decryption, semantic filter",
+        description:
+          "Refuses queries whose declared function f satisfies f(m0) \u2260 f(m1); combines malleability and noise-leakage protection (vCCAD-style).",
+      },
+      {
+        id: "legit",
+        label: "Legitimate ciphertexts only",
+        description:
+          "Continues to decrypt only ciphertexts derived from prior legitimate queries (CPAD-style), with no syntactic or semantic filter on top.",
+      },
+      {
+        id: "validity",
+        label: "Validity check",
+        description:
+          "Adaptive validity oracle: accept/reject only, no plaintext leakage (CCA1.5 / CCVA2-style).",
+      },
+      {
+        id: "func",
+        label: "Functional re-encryption",
+        description:
+          "Continued functional re-encryption access across both phases (funcCPA-style).",
+      },
+    ],
+  },
+  randomness: {
+    label: "Encryption randomness",
+    options: [
+      {
+        id: "challenger",
+        label: "Challenger-controlled",
+        description:
+          "The challenger picks the randomness for encryption oracle responses.",
+      },
+      {
+        id: "adversary",
+        label: "Adversary-controlled",
+        description:
+          "The adversary chooses the randomness used in their own encryption queries (sCPAD-style).",
+      },
+    ],
+  },
+};
+
+interface NotionSpec {
+  acronym: string;
+  title: string;
+  slug: string;
+  pre: string;
+  post: string;
+  randomness: string;
+  explanation: string;
+}
+
+const rawSpecs: Array<Omit<NotionSpec, "title" | "slug">> = [
+  {
+    acronym: "CPA",
+    pre: "none",
+    post: "none",
+    randomness: "challenger",
+    explanation:
+      "CPA is the passive baseline: no decryption capability, only the encryption oracle. Security means the ciphertext hides the plaintext against an eavesdropper.",
+  },
+  {
+    acronym: "CCA1",
+    pre: "dec",
+    post: "none",
+    randomness: "challenger",
+    explanation:
+      "CCA1 is the 'lunchtime attack': full decryption access before the challenge, then nothing once the challenge ciphertext is issued.",
+  },
+  {
+    acronym: "CCA2",
+    pre: "dec",
+    post: "full",
+    randomness: "challenger",
+    explanation:
+      "CCA2 extends CCA1 with adaptive decryption-oracle access after the challenge, refusing only the exact challenge ciphertext c*.",
+  },
+  {
+    acronym: "CCA1.5",
+    pre: "dec",
+    post: "validity",
+    randomness: "challenger",
+    explanation:
+      "CCA1.5 extends CCA1 with a post-challenge validity oracle, modeling reaction attacks like Bleichenbacher's RSA padding-oracle attack.",
+  },
+  {
+    acronym: "CCVA1",
+    pre: "validity",
+    post: "none",
+    randomness: "challenger",
+    explanation:
+      "CCVA1 restricts the pre-challenge oracle to a validity check, never revealing plaintext content. Strictly weaker than CCA1.",
+  },
+  {
+    acronym: "CCVA2",
+    pre: "validity",
+    post: "validity",
+    randomness: "challenger",
+    explanation:
+      "CCVA2 keeps the validity oracle available in both phases. Strictly stronger than CCVA1 but incomparable to CCA1.",
+  },
+  {
+    acronym: "CPAD",
+    pre: "legit",
+    post: "legit",
+    randomness: "challenger",
+    explanation:
+      "CPAD gives the adversary a constrained decryption oracle that only accepts ciphertexts derived from prior encryption or homomorphic evaluation queries. The oracle is operational throughout, with no phase distinction.",
+  },
+  {
+    acronym: "sCPAD",
+    pre: "legit",
+    post: "legit",
+    randomness: "adversary",
+    explanation:
+      "sCPAD matches CPAD's constrained decryption model but additionally lets the adversary control the encryption randomness of their own queries, modeling public-key adversaries.",
+  },
+  {
+    acronym: "funcCPA",
+    pre: "func",
+    post: "func",
+    randomness: "challenger",
+    explanation:
+      "funcCPA equips the adversary with a re-encryption oracle that decrypts a ciphertext, applies a chosen function f, and returns a fresh encryption of f(m). It models interactive bootstrapping delegation.",
+  },
+  {
+    acronym: "gCCA",
+    pre: "dec",
+    post: "gcca",
+    randomness: "challenger",
+    explanation:
+      "gCCA fixes a CCA2 fragility: instead of refusing only the exact c*, it refuses ciphertexts equivalent to c* under an efficient decryption-respecting relation.",
+  },
+  {
+    acronym: "RCCA",
+    pre: "dec",
+    post: "rcca",
+    randomness: "challenger",
+    explanation:
+      "RCCA tolerates harmless re-randomizations of the challenge by refusing any ciphertext that decrypts to either m0 or m1, regardless of its syntactic structure.",
+  },
+  {
+    acronym: "vCCA",
+    pre: "dec",
+    post: "vcca",
+    randomness: "challenger",
+    explanation:
+      "vCCA uses a SNARK-based witness extractor to decide whether a post-challenge query is derived from c*. If it is, the oracle refuses; otherwise it decrypts normally.",
+  },
+  {
+    acronym: "vCCAD",
+    pre: "legit",
+    post: "vccad",
+    randomness: "challenger",
+    explanation:
+      "vCCAD strengthens vCCA for approximate FHE. Pre-challenge it uses CPAD's constrained legitimate decryption; post-challenge it filters queries semantically, refusing any where f(m0) \u2260 f(m1).",
+  },
+];
+
+// Build full specs with titles/slugs from the collection
+const notionSpecs: Record<string, NotionSpec> = {};
+for (const s of rawSpecs) {
+  const title = titleByAcronym[s.acronym];
+  const slug = slugByAcronym[s.acronym];
+  if (!title || !slug) {
+    throw new Error(`Designer: unknown acronym ${s.acronym}`);
+  }
+  notionSpecs[s.acronym] = { ...s, title, slug };
+}
+
+// Sanity: every referenced slot option must exist
+for (const [acr, spec] of Object.entries(notionSpecs)) {
+  for (const [key, val] of [
+    ["pre", spec.pre],
+    ["post", spec.post],
+    ["randomness", spec.randomness],
+  ] as const) {
+    if (!slots[key].options.find((o) => o.id === val)) {
+      throw new Error(
+        `Designer: ${acr} references unknown ${key} option '${val}'`,
+      );
+    }
+  }
+}
+
+const difficulties: Record<"beginner" | "intermediate" | "expert", string[]> = {
+  beginner: ["CPA", "CCA1", "CCA2", "CPAD", "vCCA", "RCCA"],
+  intermediate: [
+    "CPA",
+    "CCA1",
+    "CCA2",
+    "CPAD",
+    "vCCA",
+    "RCCA",
+    "CCA1.5",
+    "CCVA1",
+    "CCVA2",
+    "funcCPA",
+    "gCCA",
+  ],
+  expert: [
+    "CPA",
+    "CCA1",
+    "CCA2",
+    "CPAD",
+    "vCCA",
+    "RCCA",
+    "CCA1.5",
+    "CCVA1",
+    "CCVA2",
+    "funcCPA",
+    "gCCA",
+    "sCPAD",
+    "vCCAD",
+  ],
+};
+
+const gameData = {
+  slots,
+  notionSpecs,
+  difficulties,
+};
+
+const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
+---
+
+<BaseLayout
+  title="Build the adversary | SecurityNotionsZoo"
+  description="Design the adversary for each security notion by picking the oracles and capabilities that define it."
+>
+  <div class="mb-8">
+    <a
+      href="/games/"
+      class="text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 text-sm font-medium inline-flex items-center gap-1 mb-6 decoration-transparent transition-colors"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+      >
+      Back to games
+    </a>
+  </div>
+
+  <div class="max-w-2xl mx-auto w-full">
+    <!-- START SCREEN -->
+    <section id="ad-start" class="space-y-8">
+      <div>
+        <h1
+          class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-slate-100 mb-3 tracking-tight transition-colors"
+        >
+          Build the adversary
+        </h1>
+        <p
+          class="text-lg text-slate-600 dark:text-slate-400 transition-colors"
+        >
+          For each security notion, pick the oracle and capability options
+          that define the adversary's game. Three slots per round: the
+          pre-challenge oracle, the post-challenge oracle, and who controls
+          the encryption randomness.
+        </p>
+      </div>
+
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm transition-colors"
+      >
+        <fieldset>
+          <legend
+            class="text-base font-semibold text-slate-900 dark:text-slate-200 mb-4 transition-colors"
+          >
+            Difficulty
+          </legend>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="ad-difficulty">
+            <button
+              type="button"
+              data-difficulty="beginner"
+              class="ad-diff-btn py-4 px-4 rounded-xl font-semibold border-2 transition-colors text-left"
+            >
+              <div class="text-lg">Beginner</div>
+              <div class="text-xs mt-1 opacity-80">
+                {difficulties.beginner.length} notions
+              </div>
+            </button>
+            <button
+              type="button"
+              data-difficulty="intermediate"
+              class="ad-diff-btn py-4 px-4 rounded-xl font-semibold border-2 transition-colors text-left"
+            >
+              <div class="text-lg">Intermediate</div>
+              <div class="text-xs mt-1 opacity-80">
+                {difficulties.intermediate.length} notions
+              </div>
+            </button>
+            <button
+              type="button"
+              data-difficulty="expert"
+              class="ad-diff-btn py-4 px-4 rounded-xl font-semibold border-2 transition-colors text-left"
+            >
+              <div class="text-lg">Expert</div>
+              <div class="text-xs mt-1 opacity-80">
+                {difficulties.expert.length} notions
+              </div>
+            </button>
+          </div>
+        </fieldset>
+
+        <button
+          type="button"
+          id="ad-start-btn"
+          class="w-full mt-6 py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        >
+          Start
+        </button>
+
+        <p
+          id="ad-best-scores"
+          class="mt-4 text-sm text-slate-500 dark:text-slate-400 text-center transition-colors hidden"
+        >
+        </p>
+      </div>
+
+      <div
+        class="text-sm text-slate-500 dark:text-slate-400 text-center transition-colors"
+      >
+        Each slot you pick correctly is worth one point. A perfect round is
+        three points.
+      </div>
+    </section>
+
+    <!-- PLAYING SCREEN -->
+    <section id="ad-playing" class="space-y-6" hidden>
+      <div>
+        <div
+          class="flex justify-between items-center mb-2 text-sm text-slate-500 dark:text-slate-400 transition-colors"
+        >
+          <span>
+            Round <span id="ad-current-index">1</span> /
+            <span id="ad-total-count">6</span>
+          </span>
+          <span>
+            Score: <span id="ad-current-score">0</span>
+          </span>
+        </div>
+        <div
+          class="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden transition-colors"
+        >
+          <div
+            id="ad-progress-bar-fill"
+            class="h-full bg-sky-600 dark:bg-accent transition-[width] duration-300"
+            style="width: 0%"
+          >
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700/50 shadow-sm text-center transition-colors"
+      >
+        <div
+          id="ad-target-acronym"
+          class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight transition-colors"
+        >
+        </div>
+        <div
+          id="ad-target-title"
+          class="mt-2 text-base text-slate-600 dark:text-slate-400 transition-colors"
+        >
+        </div>
+        <div
+          class="mt-3 text-sm text-slate-500 dark:text-slate-400 transition-colors"
+        >
+          Which adversary does this notion define?
+        </div>
+      </div>
+
+      <div id="ad-slots" class="space-y-5"></div>
+
+      <button
+        type="button"
+        id="ad-check-btn"
+        class="w-full py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+      >
+        Check
+      </button>
+
+      <div
+        id="ad-feedback"
+        class="rounded-2xl p-5 md:p-6 border-2 transition-colors"
+        hidden
+      >
+        <div class="flex items-start gap-3 mb-3">
+          <div
+            id="ad-feedback-icon"
+            class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+          >
+          </div>
+          <div
+            id="ad-feedback-title"
+            class="text-lg font-bold self-center transition-colors"
+          >
+          </div>
+        </div>
+        <div
+          id="ad-feedback-explanation"
+          class="text-sm md:text-base text-slate-700 dark:text-slate-200 transition-colors"
+        >
+        </div>
+        <a
+          id="ad-related-link"
+          href="#"
+          class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sky-600 dark:text-accent hover:text-sky-500 dark:hover:text-sky-300 decoration-transparent transition-colors"
+        >
+          Open notion page
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg
+          >
+        </a>
+      </div>
+
+      <button
+        type="button"
+        id="ad-next-btn"
+        class="w-full py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        hidden
+      >
+        Next round
+      </button>
+    </section>
+
+    <!-- END SCREEN -->
+    <section id="ad-end" class="space-y-6" hidden>
+      <div
+        class="bg-white dark:bg-slate-800/20 rounded-2xl p-6 md:p-10 border border-slate-200 dark:border-slate-700/50 shadow-sm text-center transition-colors"
+      >
+        <div
+          id="ad-end-emoji"
+          class="text-6xl mb-4 select-none"
+          aria-hidden="true"
+        >
+        </div>
+        <h2
+          class="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-2 transition-colors"
+        >
+          <span id="ad-final-score">0</span> / <span id="ad-final-total">0</span>
+        </h2>
+        <p
+          id="ad-end-message"
+          class="text-base text-slate-600 dark:text-slate-400 transition-colors"
+        >
+        </p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          id="ad-restart-btn"
+          class="flex-1 py-4 px-6 rounded-xl bg-sky-600 dark:bg-accent text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
+        >
+          Play again
+        </button>
+        <a
+          href="/games/"
+          class="flex-1 py-4 px-6 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-lg font-semibold text-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors decoration-transparent"
+        >
+          Back to games
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <script type="application/json" id="ad-data" is:inline set:html={gameJson} />
+
+  <script>
+    interface SlotOption {
+      id: string;
+      label: string;
+      description: string;
+    }
+
+    interface Slot {
+      label: string;
+      options: SlotOption[];
+    }
+
+    interface NotionSpec {
+      acronym: string;
+      title: string;
+      slug: string;
+      pre: string;
+      post: string;
+      randomness: string;
+      explanation: string;
+    }
+
+    interface GameData {
+      slots: { pre: Slot; post: Slot; randomness: Slot };
+      notionSpecs: Record<string, NotionSpec>;
+      difficulties: {
+        beginner: string[];
+        intermediate: string[];
+        expert: string[];
+      };
+    }
+
+    type SlotKey = keyof GameData["slots"];
+    type Difficulty = keyof GameData["difficulties"];
+    const SLOT_KEYS: SlotKey[] = ["pre", "post", "randomness"];
+
+    const DIFF_LABELS: Record<Difficulty, string> = {
+      beginner: "Beginner",
+      intermediate: "Intermediate",
+      expert: "Expert",
+    };
+
+    const initDesigner = () => {
+      const dataEl = document.getElementById("ad-data");
+      if (!dataEl || !dataEl.textContent) return;
+      const data: GameData = JSON.parse(dataEl.textContent);
+
+      const $ = <T extends HTMLElement = HTMLElement>(sel: string) =>
+        document.querySelector(sel) as T | null;
+
+      const shuffle = <T>(arr: T[]): T[] => {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+
+      // ---------- State ----------
+      let selectedDifficulty: Difficulty = "beginner";
+      let session: NotionSpec[] = [];
+      let roundIdx = 0;
+      let slotPicks: Record<SlotKey, string | null> = {
+        pre: null,
+        post: null,
+        randomness: null,
+      };
+      let score = 0;
+      let locked = false;
+
+      // ---------- Difficulty picker ----------
+      const diffBtns =
+        document.querySelectorAll<HTMLButtonElement>(".ad-diff-btn");
+      const activeClasses = [
+        "border-sky-600",
+        "dark:border-accent",
+        "bg-sky-50",
+        "dark:bg-accent/10",
+        "text-sky-700",
+        "dark:text-accent",
+      ];
+      const inactiveClasses = [
+        "border-slate-200",
+        "dark:border-slate-700",
+        "bg-white",
+        "dark:bg-slate-800/40",
+        "text-slate-700",
+        "dark:text-slate-300",
+      ];
+      const setDifficulty = (d: Difficulty) => {
+        selectedDifficulty = d;
+        diffBtns.forEach((b) => {
+          const active = (b.dataset.difficulty as Difficulty) === d;
+          b.classList.remove(...activeClasses, ...inactiveClasses);
+          b.classList.add(...(active ? activeClasses : inactiveClasses));
+        });
+      };
+      diffBtns.forEach((b) => {
+        b.addEventListener("click", () =>
+          setDifficulty(b.dataset.difficulty as Difficulty),
+        );
+      });
+      setDifficulty("beginner");
+
+      // ---------- Screens ----------
+      const showScreen = (id: "start" | "playing" | "end") => {
+        for (const s of ["start", "playing", "end"] as const) {
+          const el = document.getElementById(`ad-${s}`);
+          if (el) (el as HTMLElement).hidden = s !== id;
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+
+      // ---------- Slot rendering ----------
+      const OPTION_IDLE =
+        "ad-option w-full text-left p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40 text-slate-800 dark:text-slate-200 hover:border-sky-400 dark:hover:border-accent/60 transition-colors cursor-pointer";
+      const OPTION_PICKED =
+        "ad-option w-full text-left p-3 rounded-xl border-2 border-sky-600 dark:border-accent bg-sky-50 dark:bg-accent/10 text-sky-800 dark:text-accent transition-colors cursor-pointer";
+      const OPTION_CORRECT =
+        "ad-option w-full text-left p-3 rounded-xl border-2 border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 transition-colors";
+      const OPTION_WRONG =
+        "ad-option w-full text-left p-3 rounded-xl border-2 border-rose-500 dark:border-rose-400 bg-rose-50 dark:bg-rose-500/10 text-rose-800 dark:text-rose-200 transition-colors";
+      const OPTION_DIMMED =
+        "ad-option w-full text-left p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 opacity-60 transition-colors";
+
+      const renderSlots = () => {
+        const container = $("#ad-slots");
+        if (!container) return;
+        container.innerHTML = "";
+        for (const key of SLOT_KEYS) {
+          const slot = data.slots[key];
+          const wrap = document.createElement("div");
+          wrap.dataset.slotKey = key;
+          wrap.className =
+            "bg-white dark:bg-slate-800/20 rounded-2xl p-5 md:p-6 border border-slate-200 dark:border-slate-700/50 shadow-sm transition-colors";
+
+          const label = document.createElement("div");
+          label.className =
+            "text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 transition-colors";
+          label.textContent = slot.label;
+          wrap.appendChild(label);
+
+          const grid = document.createElement("div");
+          grid.className = "grid grid-cols-1 md:grid-cols-2 gap-2";
+          wrap.appendChild(grid);
+
+          for (const opt of slot.options) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.dataset.optionId = opt.id;
+            btn.dataset.slotKey = key;
+            btn.className =
+              slotPicks[key] === opt.id ? OPTION_PICKED : OPTION_IDLE;
+            btn.title = opt.description;
+            btn.innerHTML = `<div class="text-sm font-semibold">${escapeHtml(opt.label)}</div><div class="text-xs mt-0.5 opacity-75">${escapeHtml(opt.description)}</div>`;
+            btn.addEventListener("click", () => {
+              if (locked) return;
+              slotPicks[key] = opt.id;
+              refreshSlotStyles(key);
+            });
+            grid.appendChild(btn);
+          }
+
+          container.appendChild(wrap);
+        }
+      };
+
+      const escapeHtml = (s: string) =>
+        s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+
+      const refreshSlotStyles = (key: SlotKey) => {
+        const container = $("#ad-slots");
+        if (!container) return;
+        container
+          .querySelectorAll<HTMLButtonElement>(
+            `[data-slot-key="${key}"][data-option-id]`,
+          )
+          .forEach((btn) => {
+            const picked = slotPicks[key] === btn.dataset.optionId;
+            btn.className = picked ? OPTION_PICKED : OPTION_IDLE;
+          });
+      };
+
+      // ---------- Feedback rendering ----------
+      const markFeedback = (target: NotionSpec) => {
+        const container = $("#ad-slots");
+        if (!container) return;
+        for (const key of SLOT_KEYS) {
+          const correctId = target[key];
+          const pickedId = slotPicks[key];
+          const buttons = container.querySelectorAll<HTMLButtonElement>(
+            `[data-slot-key="${key}"][data-option-id]`,
+          );
+          buttons.forEach((btn) => {
+            const optId = btn.dataset.optionId;
+            if (optId === correctId) {
+              btn.className = OPTION_CORRECT;
+            } else if (optId === pickedId) {
+              btn.className = OPTION_WRONG;
+            } else {
+              btn.className = OPTION_DIMMED;
+            }
+            btn.disabled = true;
+          });
+        }
+      };
+
+      // ---------- Round lifecycle ----------
+      const renderRound = () => {
+        const target = session[roundIdx];
+        if (!target) return;
+        slotPicks = { pre: null, post: null, randomness: null };
+        locked = false;
+
+        const total = session.length;
+        const idxEl = $("#ad-current-index");
+        const totalEl = $("#ad-total-count");
+        const scoreEl = $("#ad-current-score");
+        const barEl = $<HTMLElement>("#ad-progress-bar-fill");
+        if (idxEl) idxEl.textContent = String(roundIdx + 1);
+        if (totalEl) totalEl.textContent = String(total);
+        if (scoreEl) scoreEl.textContent = String(score);
+        if (barEl) barEl.style.width = `${(roundIdx / total) * 100}%`;
+
+        const acr = $("#ad-target-acronym");
+        const ttl = $("#ad-target-title");
+        if (acr) acr.textContent = target.acronym;
+        if (ttl) ttl.textContent = target.title;
+
+        renderSlots();
+
+        const feedback = $<HTMLElement>("#ad-feedback");
+        if (feedback) feedback.hidden = true;
+        const checkBtn = $<HTMLButtonElement>("#ad-check-btn");
+        if (checkBtn) {
+          checkBtn.hidden = false;
+          checkBtn.disabled = false;
+        }
+        const nextBtn = $<HTMLButtonElement>("#ad-next-btn");
+        if (nextBtn) nextBtn.hidden = true;
+      };
+
+      const checkAnswer = () => {
+        if (locked) return;
+        const target = session[roundIdx];
+        if (!target) return;
+        // If any slot is unpicked, flash a hint
+        const missing = SLOT_KEYS.filter((k) => !slotPicks[k]);
+        if (missing.length > 0) {
+          const checkBtn = $<HTMLButtonElement>("#ad-check-btn");
+          if (checkBtn) {
+            checkBtn.animate(
+              [
+                { transform: "translateX(0)" },
+                { transform: "translateX(-4px)" },
+                { transform: "translateX(4px)" },
+                { transform: "translateX(0)" },
+              ],
+              { duration: 220 },
+            );
+          }
+          return;
+        }
+
+        locked = true;
+        let roundScore = 0;
+        for (const k of SLOT_KEYS) {
+          if (slotPicks[k] === target[k]) roundScore++;
+        }
+        score += roundScore;
+
+        const scoreEl = $("#ad-current-score");
+        if (scoreEl) scoreEl.textContent = String(score);
+
+        markFeedback(target);
+
+        const feedback = $<HTMLElement>("#ad-feedback");
+        const icon = $("#ad-feedback-icon");
+        const title = $("#ad-feedback-title");
+        const expl = $("#ad-feedback-explanation");
+        const link = $<HTMLAnchorElement>("#ad-related-link");
+
+        const perfect = roundScore === SLOT_KEYS.length;
+        if (feedback) {
+          feedback.hidden = false;
+          feedback.className =
+            "rounded-2xl p-5 md:p-6 border-2 transition-colors " +
+            (perfect
+              ? "bg-emerald-50 dark:bg-emerald-500/5 border-emerald-300 dark:border-emerald-500/40"
+              : roundScore > 0
+                ? "bg-amber-50 dark:bg-amber-500/5 border-amber-300 dark:border-amber-500/40"
+                : "bg-rose-50 dark:bg-rose-500/5 border-rose-300 dark:border-rose-500/40");
+        }
+        if (icon) {
+          icon.className =
+            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 " +
+            (perfect
+              ? "bg-emerald-500 text-white"
+              : roundScore > 0
+                ? "bg-amber-500 text-white"
+                : "bg-rose-500 text-white");
+          icon.innerHTML = perfect
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
+            : roundScore > 0
+              ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'
+              : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>';
+        }
+        if (title) {
+          title.textContent = perfect
+            ? "Perfect! 3/3 slots"
+            : roundScore > 0
+              ? `${roundScore}/3 slots correct`
+              : "Not quite right";
+          title.className =
+            "text-lg font-bold self-center transition-colors " +
+            (perfect
+              ? "text-emerald-700 dark:text-emerald-300"
+              : roundScore > 0
+                ? "text-amber-700 dark:text-amber-300"
+                : "text-rose-700 dark:text-rose-300");
+        }
+        if (expl) expl.textContent = target.explanation;
+        if (link) link.href = `/notions/${target.slug}/`;
+
+        const checkBtn = $<HTMLButtonElement>("#ad-check-btn");
+        if (checkBtn) checkBtn.hidden = true;
+        const nextBtn = $<HTMLButtonElement>("#ad-next-btn");
+        if (nextBtn) {
+          nextBtn.hidden = false;
+          nextBtn.textContent =
+            roundIdx === session.length - 1 ? "See results" : "Next round";
+          nextBtn.focus();
+        }
+      };
+
+      const nextRound = () => {
+        roundIdx++;
+        if (roundIdx >= session.length) {
+          endSession();
+        } else {
+          renderRound();
+        }
+      };
+
+      const endSession = () => {
+        const total = session.length * SLOT_KEYS.length;
+        const scoreEl = $("#ad-final-score");
+        const totalEl = $("#ad-final-total");
+        if (scoreEl) scoreEl.textContent = String(score);
+        if (totalEl) totalEl.textContent = String(total);
+
+        const ratio = total > 0 ? score / total : 0;
+        const endEmoji = $("#ad-end-emoji");
+        if (endEmoji) {
+          endEmoji.textContent =
+            ratio === 1
+              ? "\uD83C\uDFC6"
+              : ratio >= 0.8
+                ? "\uD83C\uDF89"
+                : ratio >= 0.5
+                  ? "\uD83D\uDC4D"
+                  : "\uD83D\uDCDA";
+        }
+
+        const bestKey = `ad-best-${selectedDifficulty}`;
+        let prevBest = 0;
+        try {
+          prevBest = parseInt(localStorage.getItem(bestKey) || "0", 10);
+        } catch {}
+        let msg = "";
+        if (score > prevBest) {
+          try {
+            localStorage.setItem(bestKey, String(score));
+          } catch {}
+          msg =
+            prevBest > 0
+              ? `New best score! (was ${prevBest}/${total})`
+              : "New best score!";
+        } else if (prevBest > 0) {
+          msg = `Your best for ${DIFF_LABELS[selectedDifficulty]}: ${prevBest}/${total}`;
+        }
+        const msgEl = $("#ad-end-message");
+        if (msgEl) msgEl.textContent = msg || `${score} slots matched`;
+
+        showScreen("end");
+      };
+
+      const startSession = (d: Difficulty) => {
+        const list = data.difficulties[d];
+        session = shuffle(list.map((acr) => data.notionSpecs[acr]));
+        roundIdx = 0;
+        score = 0;
+        renderRound();
+        showScreen("playing");
+      };
+
+      // ---------- Wire buttons ----------
+      const startBtn = $<HTMLButtonElement>("#ad-start-btn");
+      if (startBtn)
+        startBtn.addEventListener("click", () =>
+          startSession(selectedDifficulty),
+        );
+
+      const checkBtn = $<HTMLButtonElement>("#ad-check-btn");
+      if (checkBtn) checkBtn.addEventListener("click", checkAnswer);
+
+      const nextBtn = $<HTMLButtonElement>("#ad-next-btn");
+      if (nextBtn) nextBtn.addEventListener("click", nextRound);
+
+      const restartBtn = $<HTMLButtonElement>("#ad-restart-btn");
+      if (restartBtn)
+        restartBtn.addEventListener("click", () => showScreen("start"));
+
+      // ---------- Best score display ----------
+      const bestEl = $("#ad-best-scores");
+      const parts: string[] = [];
+      for (const d of ["beginner", "intermediate", "expert"] as Difficulty[]) {
+        try {
+          const v = parseInt(localStorage.getItem(`ad-best-${d}`) || "0", 10);
+          if (v > 0) {
+            const max = data.difficulties[d].length * SLOT_KEYS.length;
+            parts.push(`${DIFF_LABELS[d]}: ${v}/${max}`);
+          }
+        } catch {}
+      }
+      if (bestEl && parts.length > 0) {
+        bestEl.textContent = `Best scores \u00B7 ${parts.join(" \u00B7 ")}`;
+        bestEl.classList.remove("hidden");
+      }
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initDesigner);
+    } else {
+      initDesigner();
+    }
+  </script>
+</BaseLayout>
