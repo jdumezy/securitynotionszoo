@@ -24,7 +24,7 @@ vCCA occupies a middle ground: it grants the adversary a post-challenge decrypti
 This filters out exactly the queries that would allow trivial wins via homomorphic manipulation of the challenge, while still permitting decryption of unrelated ciphertexts.
 
 Manulis and Nguyen proved that vCCA is strictly stronger than CCA1 and strictly weaker than CCA2.
-Importantly, the single-challenge and multiple-challenge variants of vCCA are equivalent, as the standard hybrid argument applies: the extractor-based filtering prevents an adversary from detecting the transition point in a hybrid game.
+Importantly, the single-challenge and multi-challenge variants of vCCA are equivalent, as the standard hybrid argument applies: the extractor-based filtering prevents an adversary from detecting the transition point in a hybrid game.
 
 ## Formal Definition
 
@@ -36,7 +36,7 @@ The game proceeds as a standard CCA2 game with two decryption phases:
 2. The adversary issues the challenge query and receives $c^*$.
 3. **Phase 2 (post-challenge).** On query $(\texttt{ciphertext}, c)$: compute $(f, c_1, \ldots, c_K) = \mathsf{Extract}(c)$. If $c^* \in \{c_1, \ldots, c_K\}$, return $\bot$. Otherwise return $\mathsf{Dec}(c)$.
 
-The multiple-challenge (LOR) variant replaces the single challenge ciphertext check with $C^* \cap \{c_1, \ldots, c_K\} \neq \emptyset$, where $C^*$ is the set of all challenge ciphertexts.
+The multi-challenge (LOR) variant replaces the single challenge ciphertext check with $C^* \cap \{c_1, \ldots, c_K\} \neq \emptyset$, where $C^*$ is the set of all challenge ciphertexts.
 Manulis and Nguyen's original definition is single-challenge (denoted $\mathsf{vCCA}^{SC}$ in the literature); Brzuska et al. proved that $\mathsf{vCCA}^{SC} \equiv \mathsf{vCCA}$.
 
 The scheme is vCCA-secure if the adversary's advantage is negligible for all PPT adversaries.

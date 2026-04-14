@@ -18,7 +18,7 @@ Semi-Active (SA) security, introduced by Walter, is an FHE security notion tailo
 
 Compared to CPAD, the SA decryption oracle accepts **externally computed** ciphertexts: the adversary submits a ciphertext $c$ alongside a function $f$ and a list of indices into the encryption state, and the game decrypts $c$ provided the claimed computation does not itself reveal the challenge bit. The motivation is that in an FHE+SNARG application, the server returns an arbitrary ciphertext and the SNARG pins down how it was allegedly derived; SA models that pin-down as a constraint checked inside the decryption oracle. Unlike vCCA, no witness extractor is assumed -- the adversary itself declares the derivation.
 
-Walter proved that SA sits strictly between IND-CPA and IND-vCCA, and is **incomparable** with IND-CCA1, IND-CCVA, IND-CCA1.5, and FuncCPA. In particular, none of these four notions implies SA and SA implies none of them -- SA is a separate axis of strengthening, not a point on the classical CPA $\to$ CCA1 $\to$ CCA2 ladder.
+Walter proved that SA sits strictly between IND-CPA and IND-vCCA, and is **incomparable** with IND-CCA1, IND-CCVA, IND-CCA1.5, and funcCPA. In particular, none of these four notions implies SA and SA implies none of them -- SA is a separate axis of strengthening, not a point on the classical CPA $\to$ CCA1 $\to$ CCA2 ladder.
 
 ## Formal Definition
 
