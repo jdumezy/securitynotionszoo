@@ -29,7 +29,7 @@ In the correct regime, however, vCCAD and vCCA are all equivalent.
 
 ## Formal Definition
 
-The vCCAD game is a multiple-challenge game maintaining the same state $S$ of message-message-ciphertext triplets as the CPAD game, and assumes the same extractor $\mathsf{Extract}$ as the vCCA game.
+The vCCAD game is a multi-challenge game maintaining the same state $S$ of message-message-ciphertext triplets as the CPAD game, and assumes the same extractor $\mathsf{Extract}$ as the vCCA game.
 In the private-key setting, the decryption oracle is defined as follows:
 
 **Decryption request.** On query $(\texttt{ciphertext}, c)$:
@@ -54,7 +54,7 @@ Like CPAD, it also prevents noise-leakage attacks where the adversary exploits d
 
 The separation results established by Brzuska et al. show that neither vCCA nor CPAD alone is sufficient in the approximate FHE setting.
 vCCA does not imply $\mathsf{CPAD}_2$ (the decryption noise leakage is invisible to the vCCA game), and $\mathsf{CPAD}$ does not imply vCCA (the CPAD game provides no decryption oracle for adversary-crafted ciphertexts).
-vCCAD subsumes both. Furthermore, unlike vCCA where single and multiple challenge variants are equivalent, the multiple-challenge variant of vCCAD is strictly stronger than its single-challenge counterpart ($\mathsf{vCCAD}^{SC} \prec \mathsf{vCCAD}$) in the general regime.
+vCCAD subsumes both. Furthermore, unlike vCCA where the single-challenge and multi-challenge variants are equivalent, the multi-challenge variant of vCCAD is strictly stronger than its single-challenge counterpart ($\mathsf{vCCAD}^{SC} \prec \mathsf{vCCAD}$) in the general regime.
 
 ## Achieving This Notion
 

@@ -21,7 +21,7 @@ This equivalence was established by Goldwasser and Micali (1984).
 
 ### Non-Malleability (NM)
 
-Non-malleability requires that an adversary, given a challenge ciphertext, cannot produce a *related* ciphertext-one whose plaintext bears a meaningful relation to the challenge plaintext. 
+Non-malleability requires that an adversary, given a challenge ciphertext, cannot produce a *related* ciphertext, one whose plaintext bears a meaningful relation to the challenge plaintext.
 
 In the context of FHE, non-malleability is a critical distinguishing factor.
 Because FHE schemes are explicitly designed to allow computation on encrypted data, they are **inherently malleable**.
@@ -41,12 +41,12 @@ One-wayness requires that given a ciphertext, the adversary cannot recover the e
 This is stronger than KR but weaker than IND.
 For deterministic encryption or schemes with small message spaces, OW and IND can differ substantially.
 
-### Left-or-Right (LOR) vs Find-then-Guess (FTG)
+### Left-or-Right (LOR) vs Find-Then-Guess (FTG)
 
 These are not separate security flavors, but rather two structurally distinct formulations of the indistinguishability game that characterize how the adversary interacts with the challenge:
 
 - **Find-Then-Guess (FTG):** Also known as the single-challenge formulation. The game has two distinct phases. In the "Find" phase, the adversary receives the public key and outputs a single pair of messages $(m_0, m_1)$. It then receives a challenge ciphertext encrypting $m_b$ for a random hidden bit $b$. In the "Guess" phase, it outputs its guess for $b$.
-- **Left-or-Right (LOR):** Also known as the multi-challenge formulation. The adversary is given access to an evaluation oracle $\mathcal{O}_{\text{LOR}}(\cdot, \cdot, b)$ initialized with a random hidden bit $b$. The adversary can query this oracle polynomially many times with arbitrary pairs $(m_{j,0}, m_{j,1})$, and each time receives an encryption of $m_{j,b}$.
+- **Left-or-Right (LOR):** Also known as the multi-challenge formulation. The adversary is given access to a challenge oracle $\mathcal{O}_{\text{LOR}}(\cdot, \cdot, b)$ initialized with a random hidden bit $b$. The adversary can query this oracle polynomially many times with arbitrary pairs $(m_{j,0}, m_{j,1})$, and each time receives an encryption of $m_{j,b}$.
 
 For CPA and CCA security of standard exact encryption, [Bellare, Desai, Jokipii, and Rogaway (1997)](https://web.cs.ucdavis.edu/~rogaway/papers/sym-enc.pdf) showed that FTG and LOR are polynomially equivalent.
 A standard hybrid argument proves that an adversary making $q$ queries to an LOR oracle can be reduced to an FTG adversary with its advantage degraded by a factor of $q$. 

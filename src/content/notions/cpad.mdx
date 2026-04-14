@@ -26,7 +26,7 @@ While initially only targeting CKKS, CPAD attacks have been extended to all LWE/
 
 ## Formal Definition
 
-The CPAD security game is a Left-or-Right multiple-challenge game.
+The CPAD security game is a multi-challenge Left-or-Right game.
 Given a homomorphic encryption scheme $\mathcal{E}_H = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$, the game is parameterized by a hidden bit $b \xleftarrow{\textdollar} \{0,1\}$ and maintains an initially empty state $S$ of message-message-ciphertext triplets:
 
 1. **Key generation.** Run $(ek, sk) \leftarrow \mathsf{KeyGen}(1^\lambda)$ and give $ek$ to $\mathcal{A}$.
@@ -61,7 +61,7 @@ For exact schemes where decryption errors occur, parameter choices must be caref
 ## Further Reading
 
 The CPAD notion was introduced by [Li and Micciancio (Eurocrypt 2021)](https://eprint.iacr.org/2020/1533).
-The paper also left open the question of whether single-challenge and multiple-challenge CPAD are equivalent. [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) settled this by proving that multiple-challenge CPAD is strictly stronger than single-challenge CPAD in the general (approximate) regime, i.e., $\mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$.
+The paper also left open the question of whether single-challenge and multi-challenge CPAD are equivalent. [Brzuska et al. (CIC 2025)](https://eprint.iacr.org/2024/812) settled this by proving that multi-challenge CPAD is strictly stronger than single-challenge CPAD in the general (approximate) regime, i.e., $\mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$.
 They further identified intermediate variants forming the following strict hierarchy in the general (approximate FHE) regime:
 
 $$\mathsf{CPAD}_1 \prec \mathsf{CPAD}_{1.5} \prec \mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC} \prec \mathsf{CPAD}$$
@@ -70,7 +70,7 @@ where:
 - **$\mathsf{CPAD}_1$** restricts the decryption oracle to close after the challenge (analogous to CCA1 vs CCA2).
 - **$\mathsf{CPAD}_{1.5}$** augments $\mathsf{CPAD}_1$ with a *verification oracle* after the challenge, which reveals whether a ciphertext is valid (decrypts to non-$\bot$) without revealing the plaintext - analogous to the classical CCA1.5 (CCVA) notion of [Das, Dutta, and Adhikari (ProvSec 2013)].
 - **$\mathsf{CPAD}_2 \equiv \mathsf{CPAD}^{SC}$** is the single-challenge variant (one challenge request with $m_0 \neq m_1$).
-- **$\mathsf{CPAD}$** is the full multiple-challenge (Left-or-Right) variant.
+- **$\mathsf{CPAD}$** is the full multi-challenge (Left-or-Right) variant.
 
 All separations are strict [BCF+25, Propositions 4.1, 4.3–4.7]. A more permissive verification variant $\mathsf{CPAD}^+_{1.5}$ (which only refuses the challenge ciphertext itself, not all challenge-related ciphertexts) is also strictly stronger than $\mathsf{CPAD}_{1.5}$.
 

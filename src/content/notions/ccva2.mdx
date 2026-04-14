@@ -1,7 +1,7 @@
 ---
 title: "Chosen Ciphertext Verification Attack 2"
 acronym: "CCVA2"
-description: "CPA plus a both-phase ciphertext verification oracle; strictly between CCVA1 and CCA2, not trivially implied by CCA1."
+description: "CPA plus a ciphertext verification oracle in both phases; strictly between CCVA1 and CCA2, and not trivially implied by CCA1."
 tags: ["Adaptive verification oracle", "FHE-compatible"]
 introduced_in:
   - title: "Relaxing IND-CCA: Indistinguishability against Chosen Ciphertext Verification Attack"
@@ -14,7 +14,7 @@ implied_by: ["CCA1.5"]
 
 ## Overview
 
-Adaptive Chosen Ciphertext Verification Attack (CCVA2) security, also known as IND-CCVA2 or simply IND-CCVA, augments IND-CPA by granting the adversary access to a *ciphertext verification oracle* during **both** the pre-challenge and post-challenge query phases. On input $c$, the verification oracle replies "valid" if $c$ decrypts to a message in $\mathcal{M}$ and "invalid" if it decrypts to $\bot$; it never returns the plaintext itself. The challenge ciphertext $c^*$ may also be queried and is always "valid".
+Adaptive Chosen Ciphertext Verification Attack (CCVA2) security, also known as IND-CCVA2 or simply IND-CCVA, augments IND-CPA by granting the adversary access to a *ciphertext verification oracle* during **both** the pre-challenge and post-challenge query phases. On input $c$, the verification oracle replies "valid" if $c$ decrypts to a message in $\mathcal{M}$ and "invalid" if it decrypts to $\bot$; it never returns the plaintext itself. As on the CCA1.5 page, we explicitly stipulate that the challenge ciphertext $c^*$ may also be queried and is answered with "valid".
 
 Historically, the notion was first formalised by Krohn in a 1999 Harvard undergraduate thesis as *illegal ciphertext attack* (IND-ICA), motivated by practical attacks that leak a single validity bit per query - Bleichenbacher's attack on RSA-PKCS#1 (CRYPTO 1998), the Hall-Goldberg-Schneier "reaction attack" on the McEliece and Ajtai-Dwork cryptosystems (ICICS 1999), and the Joye-Quisquater-Yung attack on EPOC (CT-RSA 2001). [Pandey, Sarkar, and Jhanwar (SPACE 2012)](https://link.springer.com/chapter/10.1007/978-3-642-34416-9_5) subsequently re-introduced the notion under the name CCVA and focused exclusively on the adaptive case; what they call CCVA corresponds to CCVA2 here. The full implication and separation picture relating CCVA2 to the other CCA-style notions was later established by [Das, Dutta, and Adhikari (ProvSec 2013)](https://link.springer.com/chapter/10.1007/978-3-642-41227-1_6).
 
@@ -28,11 +28,11 @@ The IND-CCVA2 game is defined for a public-key encryption scheme $\Pi = (\mathsf
 2. **Phase 1 (pre-challenge):** $\mathcal{A}$ has access to a *ciphertext verification oracle* $\mathcal{O}_V(\cdot)$ defined by
 
 $$
-\mathcal{O}_V(c) = \begin{cases} \text{``valid''}, & \text{if } \mathsf{Dec}(sk, c) \neq \bot, \\ \text{``invalid''}, & \text{if } \mathsf{Dec}(sk, c) = \bot. \end{cases}
+\mathcal{O}_V(c) = \begin{cases} \text{``valid''}, & \text{if } c = c^*, \\ \text{``valid''}, & \text{if } \mathsf{Dec}(sk, c) \neq \bot, \\ \text{``invalid''}, & \text{if } \mathsf{Dec}(sk, c) = \bot. \end{cases}
 $$
 
 3. **Challenge:** $\mathcal{A}$ outputs two equal-length messages $(m_0, m_1)$. The challenger samples $b \xleftarrow{\textdollar} \{0,1\}$, computes $c^* \leftarrow \mathsf{Enc}(pk, m_b)$, and sends $c^*$ to $\mathcal{A}$.
-4. **Phase 2 (post-challenge):** $\mathcal{A}$ **retains** access to $\mathcal{O}_V(\cdot)$ and may query arbitrary ciphertexts, including the challenge ciphertext $c^*$ itself (which always returns "valid").
+4. **Phase 2 (post-challenge):** $\mathcal{A}$ **retains** access to $\mathcal{O}_V(\cdot)$ and may query arbitrary ciphertexts, including the challenge ciphertext $c^*$ itself (which is answered with "valid" by explicit convention).
 5. **Guess:** $\mathcal{A}$ outputs a guess $b'$.
 
 The advantage is defined as:
