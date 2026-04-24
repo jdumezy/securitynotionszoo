@@ -55,6 +55,15 @@ If $\mathcal{A}$ breaks $\Pi$ with non-negligible advantage, then $\mathcal{B}$ 
 
 The quality of a reduction is measured by how much it degrades the advantage: if $\mathcal{A}$ wins with advantage $\varepsilon$, does $\mathcal{B}$ solve $\mathsf{A}$ with advantage $\varepsilon$, or only $\varepsilon / q$ where $q$ is the number of queries? **Tight reductions** (where the loss factor is constant) are preferred because they allow smaller security parameters without sacrificing concrete security.
 
+## Falsifiable and Non-Falsifiable Assumptions
+
+A reduction is only as meaningful as the assumption it reduces to. In the sense of [Naor (2003)](https://doi.org/10.1007/978-3-540-45146-4_6), an assumption is **falsifiable** if a claimed break can be demonstrated in an efficient challenge experiment: the challenger runs in polynomial time and can check whether the adversary has won. Standard search assumptions, decisional assumptions, and game-based notions such as IND-CPA or EUF-CMA fit this pattern.
+
+A **non-falsifiable** assumption is not captured by such an efficiently checkable game. Typical examples include **knowledge assumptions**, which assert that an adversary that outputs some value must “know” a corresponding witness, and proofs in idealized models such as the random oracle, ideal cipher, or generic group model.
+
+Plaintext awareness should be classified carefully. Some formulations behave like knowledge assumptions, because they posit an extractor for the plaintext “known” by the ciphertext creator. Other formulations, such as the PA0/PA1/PA2 notions of Bellare and Palacio, are better viewed as strong security notions for public-key encryption rather than assumptions in their own right.
+
+Non-falsifiable assumptions and idealized models are not automatically invalid, but they are less direct evidence of concrete security. In the zoo, reductions are stated relative to standard falsifiable assumptions whenever possible, and uses of knowledge assumptions, idealized models, or circular/KDM-style assumptions are flagged explicitly.
 ## Game Hopping
 
 **Game hopping** (also called game playing) is a proof technique introduced by [Bellare and Rogaway (2004)](https://eprint.iacr.org/2004/331) and [Shoup (2004)](https://eprint.iacr.org/2004/332) in which a proof proceeds through a sequence of games $G_0, G_1, \ldots, G_n$:

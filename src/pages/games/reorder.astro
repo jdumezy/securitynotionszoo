@@ -247,6 +247,12 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
           <span id="rg-edge-count">0</span> arrow<span id="rg-edge-count-plural"
             >s</span
           > placed
+          <span class="mx-2 opacity-50">&middot;</span>
+          <span
+            id="rg-timer"
+            class="font-mono tabular-nums text-slate-700 dark:text-slate-300"
+            >0:00.0</span
+          >
         </div>
         <button
           type="button"
@@ -394,6 +400,22 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
         >
           <span id="rg-final-score">0</span> / <span id="rg-final-total">0</span>
         </h2>
+        <div
+          id="rg-time-block"
+          class="mt-2 mb-1 hidden"
+        >
+          <div
+            class="font-mono tabular-nums text-2xl md:text-3xl font-bold text-sky-700 dark:text-accent"
+            id="rg-final-time"
+          >
+            0:00.0
+          </div>
+          <div
+            id="rg-best-time"
+            class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mt-1"
+          >
+          </div>
+        </div>
         <p
           id="rg-end-message"
           class="text-base text-slate-600 dark:text-slate-400 transition-colors"
@@ -446,6 +468,31 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
         >
           Play again
         </button>
+        <button
+          type="button"
+          id="rg-share-btn"
+          class="hidden flex-1 py-4 px-6 rounded-xl bg-emerald-600 text-white text-lg font-semibold hover:opacity-90 active:opacity-80 transition-opacity flex items-center justify-center gap-2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span id="rg-share-label">Share my time</span>
+        </button>
         <a
           href="/games/"
           class="flex-1 py-4 px-6 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-lg font-semibold text-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors decoration-transparent"
@@ -492,6 +539,34 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
       let userEdges = new Set<string>();
       let selectedSource: string | null = null;
       let locked = false; // when results are shown, freeze interactions
+      let timerStart = 0;
+      let timerInterval: number | null = null;
+      let lastElapsedMs = 0;
+      let lastResultValid = false;
+
+      const formatTime = (ms: number) => {
+        const totalTenths = Math.floor(ms / 100);
+        const m = Math.floor(totalTenths / 600);
+        const s = Math.floor(totalTenths / 10) % 60;
+        const t = totalTenths % 10;
+        return `${m}:${s.toString().padStart(2, "0")}.${t}`;
+      };
+      const stopTimer = () => {
+        if (timerInterval !== null) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      };
+      const startTimer = () => {
+        stopTimer();
+        timerStart = performance.now();
+        const el = $("#rg-timer");
+        if (el) el.textContent = "0:00";
+        timerInterval = window.setInterval(() => {
+          const el2 = $("#rg-timer");
+          if (el2) el2.textContent = formatTime(performance.now() - timerStart);
+        }, 100);
+      };
 
       const VIEW_W = 1000;
       const VIEW_H = 1000;
@@ -980,11 +1055,14 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
         refreshCount();
         renderNodes();
         renderEdges();
+        startTimer();
         showScreen("playing");
       };
 
       const endSession = () => {
         if (!currentLevel) return;
+        stopTimer();
+        lastElapsedMs = performance.now() - timerStart;
         const reduction = new Set(
           currentLevel.edges.map(([a, b]) => edgeKey(a, b)),
         );
@@ -1055,12 +1133,94 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
         } else if (prevBest > 0) {
           msg = `Your best for ${DIFF_LABELS[selectedDifficulty]}: ${prevBest}`;
         }
+
+        // A graph is "valid" if every essential arrow is present and there
+        // are no wrong arrows. Redundant transitive shortcuts don't count
+        // against the run — they're allowed in speedruns.
+        lastResultValid = wrong.length === 0 && missing.length === 0;
+        const timeBlock = $("#rg-time-block");
+        const finalTimeEl = $("#rg-final-time");
+        const bestTimeEl = $("#rg-best-time");
+        const shareBtn = $("#rg-share-btn");
+        if (lastResultValid) {
+          if (timeBlock) timeBlock.classList.remove("hidden");
+          if (finalTimeEl) finalTimeEl.textContent = formatTime(lastElapsedMs);
+          const bestTimeKey = `rg-best-time-${selectedDifficulty}`;
+          let prevBestTime = 0;
+          try {
+            prevBestTime = parseInt(
+              localStorage.getItem(bestTimeKey) || "0",
+              10,
+            );
+          } catch {}
+          const isNewBestTime =
+            prevBestTime === 0 || lastElapsedMs < prevBestTime;
+          if (isNewBestTime) {
+            try {
+              localStorage.setItem(bestTimeKey, String(Math.round(lastElapsedMs)));
+            } catch {}
+          }
+          if (bestTimeEl) {
+            bestTimeEl.textContent = isNewBestTime
+              ? prevBestTime > 0
+                ? `New record! (was ${formatTime(prevBestTime)})`
+                : "New record!"
+              : `Best: ${formatTime(prevBestTime)}`;
+          }
+          if (shareBtn) shareBtn.classList.remove("hidden");
+        } else {
+          if (timeBlock) timeBlock.classList.add("hidden");
+          if (shareBtn) shareBtn.classList.add("hidden");
+        }
+
         const msgEl = $("#rg-end-message");
         if (msgEl)
           msgEl.textContent =
             msg || (perfect ? "Perfect graph!" : `${correct.length} essential arrows found`);
 
         showScreen("end");
+      };
+
+      const shareRun = async () => {
+        if (!lastResultValid || !currentLevel) return;
+        const time = formatTime(lastElapsedMs);
+        const diff = DIFF_LABELS[selectedDifficulty];
+        const url =
+          typeof window !== "undefined" && window.location
+            ? `${window.location.origin}/games/reorder/`
+            : "";
+        const text =
+          `I rebuilt the ${diff} security-notions graph in ${time} ` +
+          `(${currentLevel.edges.length} arrows) on the Security Notions Zoo. ` +
+          `Beat my time:`;
+        const shareData: ShareData = {
+          title: "Recreate the graph",
+          text,
+          url,
+        };
+        const labelEl = $("#rg-share-label");
+        const flash = (s: string) => {
+          if (!labelEl) return;
+          const prev = labelEl.textContent;
+          labelEl.textContent = s;
+          setTimeout(() => {
+            if (labelEl) labelEl.textContent = prev;
+          }, 1800);
+        };
+        try {
+          if (navigator.share) {
+            await navigator.share(shareData);
+            return;
+          }
+        } catch {
+          // user cancelled or share failed — fall through to clipboard
+        }
+        try {
+          await navigator.clipboard.writeText(`${text} ${url}`.trim());
+          flash("Copied to clipboard!");
+        } catch {
+          flash("Couldn't share");
+        }
       };
 
       const renderResultsOnCanvas = (
@@ -1104,6 +1264,9 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
       if (againBtn)
         againBtn.addEventListener("click", () => showScreen("start"));
 
+      const shareBtn = $<HTMLButtonElement>("#rg-share-btn");
+      if (shareBtn) shareBtn.addEventListener("click", shareRun);
+
       // Escape key cancels an in-progress source selection
       window.addEventListener("keydown", (e) => {
         if (locked) return;
@@ -1119,11 +1282,19 @@ const gameJson = JSON.stringify(gameData).replace(/</g, "\\u003c");
       for (const d of ["beginner", "intermediate", "expert"] as Difficulty[]) {
         try {
           const v = parseInt(localStorage.getItem(`rg-best-${d}`) || "0", 10);
-          if (v > 0) parts.push(`${DIFF_LABELS[d]}: ${v}`);
+          const t = parseInt(
+            localStorage.getItem(`rg-best-time-${d}`) || "0",
+            10,
+          );
+          const bits: string[] = [];
+          if (v > 0) bits.push(String(v));
+          if (t > 0) bits.push(formatTime(t));
+          if (bits.length > 0)
+            parts.push(`${DIFF_LABELS[d]}: ${bits.join(" / ")}`);
         } catch {}
       }
       if (bestEl && parts.length > 0) {
-        bestEl.textContent = `Best scores \u00B7 ${parts.join(" \u00B7 ")}`;
+        bestEl.textContent = `Best score / time \u00B7 ${parts.join(" \u00B7 ")}`;
         bestEl.classList.remove("hidden");
       }
     };
